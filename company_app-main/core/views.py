@@ -1,6 +1,6 @@
 import pandas as pd
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import AgentiComerciali, Contracte, Factura, Plata, ContBancar
+from .models import AgentiComerciali, Contracte, Factura, Plata, ContBancar, BudgetLine, EcoCode
 from django import forms
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Count, DecimalField
@@ -11,11 +11,14 @@ from django.db.models import Q
 from django.http import HttpResponse
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from .forms import ContBancarForm
+from .forms import ContBancarForm, ContracteForm
 from .forms import SupplierForm
 from django.contrib import messages
 from django.http import JsonResponse
 from .forms import ExcelUploadForm
+from django.views.decorators.csrf import csrf_exempt
+from .serializers import BudgetLineSerializer
+from .services.excel_parser import BudgetExcelParser
 
 
 @login_required
@@ -386,27 +389,225 @@ def cont_bancar_delete(request, pk):
 
 
 @login_required
-def import_excel(request):
-    if request.method == "POST":
-        form = ExcelUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            excel_file = request.FILES["file"]
-            df = pd.read_excel(excel_file)
+def linia_bugetara_view(request):
+    """Страница Linia Bugetara с drag&drop для Excel"""
+    form = ExcelUploadForm()
 
-            for _, row in df.iterrows():
-                AgentiComerciali.objects.create(
-                    cod=row["Cod"],
-                    denumire=row["Denumire"],
-                    cod_fiscal=row["Cod fiscal"],
-                    denumirea_completa=row["Denumirea completă"],
-                    adresa_juridica=row["Adresa juridică"],
-                    adresa_postala=row["Adresa poștală"],
-                    telefon=row["Telefon"],
-                    conducator=row["Conducătorul instituției"],
-                    email=row["E-mail"],
+    # Получаем существующие бюджетные линии для отображения
+    budget_lines = BudgetLine.objects.filter(anul=2025).order_by('cod_bugetar')
+
+    return render(request, 'core/linia_bugetara.html', {
+        'form': form,
+        'budget_lines': budget_lines
+    })
+
+
+@csrf_exempt
+@login_required
+def handle_excel_upload(request):
+    """Обработка загруженного Excel файла через AJAX"""
+    if request.method == 'POST' and request.FILES.get('excel_file'):
+        excel_file = request.FILES['excel_file']
+        import_type = request.POST.get('import_type', 'suppliers')
+
+        try:
+            # Если это импорт бюджетных линий
+            if import_type == 'budget_lines':
+                return handle_budget_lines_import(excel_file)
+
+            # Остальная твоя существующая логика
+            df = pd.read_excel(excel_file)
+            result = process_excel_data(df, import_type)
+
+            return JsonResponse({
+                'success': True,
+                'message': f'Успешно обработано {result["processed"]} записей',
+                'processed': result['processed'],
+                'errors': result['errors'],
+                'import_type': import_type
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Ошибка при обработке файла: {str(e)}'
+            })
+
+    return JsonResponse({
+        'success': False,
+        'message': 'Файл не получен'
+    })
+
+
+def handle_budget_lines_import(excel_file):
+    """Обработка импорта бюджетных линий из Excel"""
+    try:
+        print(f"Starting import for file: {excel_file.name}")
+
+        # Извлекаем год из имени файла
+        import re
+        year_match = re.search(r'(20\d{2})', excel_file.name)
+        target_year = int(year_match.group(1)) if year_match else 2025
+
+        print(f"Target year: {target_year}")
+
+        # Сохраняем файл временно
+        import tempfile
+        import os
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp_file:
+            for chunk in excel_file.chunks():
+                tmp_file.write(chunk)
+            tmp_path = tmp_file.name
+
+        # Парсим Excel
+        from .services.excel_parser import BudgetExcelParser
+        parser = BudgetExcelParser()
+        budget_data = parser.parse_budget_file(tmp_path, target_year)
+
+        print(f"Parsed {len(budget_data)} budget lines for year {target_year}")
+
+        # Сохраняем данные
+        created_count = 0
+        updated_count = 0
+
+        for item in budget_data:
+            try:
+                obj, created = BudgetLine.objects.update_or_create(
+                    cod_bugetar=item['cod_bugetar'],
+                    anul=item['anul'],
+                    defaults={
+                        'denumirea': item['denumirea'],
+                        'suma_alocata': item['suma_alocata'],
+                        'file_name': excel_file.name
+                    }
                 )
-            messages.success(request, "Importul a fost realizat cu succes.")
-            return redirect("supplier_list")
-    else:
-        form = ExcelUploadForm()
-    return render(request, "core/import_excel.html", {"form": form})
+                if created:
+                    created_count += 1
+                else:
+                    updated_count += 1
+            except Exception as e:
+                print(f"Error saving budget line {item['cod_bugetar']}: {e}")
+
+        os.unlink(tmp_path)
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Импорт бюджетных линий за {target_year} год завершен: {created_count} новых, {updated_count} обновленных',
+            'created': created_count,
+            'updated': updated_count,
+            'year': target_year,
+            'import_type': 'budget_lines'
+        })
+
+    except Exception as e:
+        print(f"Import error: {e}")
+        return JsonResponse({
+            'success': False,
+            'message': f'Ошибка при импорте бюджетных линий: {str(e)}'
+        })
+
+
+@login_required
+def search_budget_lines(request):
+    """Поиск бюджетных линий по коду"""
+    search_code = request.GET.get('cod', '').strip()
+    year = request.GET.get('anul', 2025)
+
+    try:
+        budget_lines = BudgetLine.objects.filter(anul=year)
+
+        if search_code:
+            budget_lines = budget_lines.filter(cod_bugetar__icontains=search_code)
+
+        # Ограничиваем количество результатов
+        budget_lines = budget_lines.order_by('cod_bugetar')[:100]
+
+        data = []
+        for line in budget_lines:
+            data.append({
+                'id': line.id,
+                'cod_bugetar': line.cod_bugetar,
+                'denumirea': line.denumirea,
+                'suma_alocata': float(line.suma_alocata),
+                'suma_cheltuita': float(line.suma_cheltuita),
+                'suma_ramasa': float(line.suma_ramasa),
+                'procent_cheltuit': line.procent_cheltuit,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'budget_lines': data,
+            'count': len(data),
+            'search_code': search_code,
+            'year': year
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+@login_required
+def eco_autocomplete(request):
+    """AJAX-подсказки для поля ECO"""
+    term = request.GET.get("term", "").strip()
+    results = []
+
+    if term:
+        eco_list = EcoCode.objects.filter(cod__icontains=term).order_by("cod")[:20]
+        for eco in eco_list:
+            results.append({
+                "label": f"{eco.cod} — {eco.descriere}",
+                "value": eco.cod
+            })
+
+    return JsonResponse(results, safe=False)
+
+def create_contract(request):
+    form = ContracteForm(request.POST or None)
+    budget_lines = BudgetLine.objects.filter(anul=2025).order_by('cod_bugetar')
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        return redirect("contract_list")
+
+    return render(request, "core/contract_form.html", {
+        "form": form,
+        "budget_lines": budget_lines,
+    })
+
+def autocomplete_coduri_buget(request):
+    term = request.GET.get("term", "")
+    results = BudgetLine.objects.filter(cod__icontains=term).values("cod", "denumirea")[:10]
+    data = [{"label": f"{r['cod']} — {r['denumirea']}", "value": r["cod"]} for r in results]
+    return JsonResponse(data, safe=False)
+
+
+
+@login_required
+def budget_line_autocomplete(request):
+    """
+    AJAX-подсказки для поля "Код объекта" (BudgetLine).
+    Ищет по полю cod_bugetar и denumirea.
+    """
+    term = request.GET.get("term", "").strip()
+    results = []
+
+    if term:
+        # Ищем по коду ИЛИ по названию
+        qs = BudgetLine.objects.filter(
+            Q(cod_bugetar__icontains=term) |
+            Q(denumirea__icontains=term)
+        ).order_by("cod_bugetar")[:20]
+
+        for line in qs:
+            results.append({
+                # label: Что отображается пользователю в выпадающем списке
+                "label": f"[{line.cod_bugetar}] — {line.denumirea}",
+                # value: Что вставляется в поле ввода после выбора
+                "value": line.cod_bugetar
+            })
+
+    return JsonResponse(results, safe=False)

@@ -1,4 +1,5 @@
 {% extends "core/base.html" %}
+{% load static %}
 
 {% block title %}Adauga contract{% endblock %}
 
@@ -33,13 +34,26 @@
         <tr>
             <td><label for="id_iban">IBAN:</label></td>
             <td>{{ form.iban }}</td>
+            <td><label for="id_cod_obiectului">Codul obiectului:</label></td>
+            <td>{{ form.cod_obiectului }}</td>
+        </tr>
+
+        {% if form.instance.contractul_nu_este_inregistrat_la_trezorerie %}
+        <tr>
             <td><label for="id_eco">ECO:</label></td>
-            <td>{{ form.eco }}</td>
+            <td colspan="3">{{ form.eco }}</td>
+        </tr>
+        {% endif %}
+
+        <tr>
+            <td><label for="id_linie_bugetara">Linie bugetară:</label></td>
+            <td colspan="3">{{ form.linie_bugetara }}</td>
         </tr>
 
         <tr>
             <th colspan="4">Datele agentului economic</th>
         </tr>
+
         <tr>
             <td><label for="id_agent">Agent economic:</label></td>
             <td colspan="3">{{ form.agent }}</td>
@@ -76,15 +90,12 @@
             <td><label for="id_suma_ramasa">Suma rămasă:</label></td>
             <td>{{ form.suma_ramasa }}</td>
         </tr>
+
         <tr>
-            <td><label for="id_cod_obiectului">Codul obiectului:</label></td>
-            <td>{{ form.cod_obiectului }}</td>
             <td><label for="id_cod_valutei">Codul valutei:</label></td>
             <td>{{ form.cod_valutei }}</td>
-        </tr>
-        <tr>
             <td><label for="id_continut_prescurtat">Conținutul prescurtat:</label></td>
-            <td colspan="3">{{ form.continut_prescurtat }}</td>
+            <td>{{ form.continut_prescurtat }}</td>
         </tr>
         <tr>
             <td><label for="id_data_indeplinirii_obligatiilor">Data îndeplinirii obligațiilor:</label></td>
@@ -105,5 +116,24 @@
     <button type="submit" class="btn btn-primary">Salvează</button>
     <a href="{% url 'contract_list' %}" class="btn btn-secondary">Înapoi</a>
 </form>
+
+<script src="{% static 'core/vendor/jquery-ui.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'core/vendor/jquery-ui.min.css' %}">
+
+<script>
+$(function() {
+    // 1. ECO Autocomplete (динамический URL)
+    $("#id_eco").autocomplete({
+        source: "{% url 'eco_autocomplete' %}",
+        minLength: 1
+    });
+
+    // 2. Codul Obiectului Autocomplete (Budget Line) (динамический URL)
+    $("#id_cod_obiectului").autocomplete({
+        source: "{% url 'budget_line_autocomplete' %}",
+        minLength: 1
+    });
+});
+</script>
+
 {% endblock %}
-A

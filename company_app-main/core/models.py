@@ -32,43 +32,16 @@ class AgentiComerciali(models.Model):
     def __str__(self):
         return f"{self.denumirea} ({self.cod_fiscal})"
 
-class Contracte(models.Model):
+
+class EcoCode(models.Model):
     cod = models.CharField(max_length=50, unique=True)
-    denumirea = models.CharField(max_length=255)
-    institutia = models.CharField(max_length=255, blank=True, null=True)
-    programul = models.CharField(max_length=255, blank=True, null=True)
-    componente_de_sursa = models.CharField(max_length=255, blank=True, null=True)
-    originea_sursei = models.CharField(max_length=255, blank=True, null=True)
-    iban = models.CharField(max_length=34, blank=True, null=True)
-    eco = models.CharField(max_length=50, blank=True, null=True)
-
-    agent = models.ForeignKey(AgentiComerciali, on_delete=models.CASCADE, related_name="contracte")
-    contul_de_decontare = models.CharField(max_length=255, blank=True, null=True)
-
-    nr_contractului = models.CharField(max_length=100)
-    data_contractului = models.DateField()
-    conditii_plata = models.CharField(max_length=255, blank=True, null=True)
-    termen_valabilitate = models.DateField(blank=True, null=True)
-    suma_contractului = models.DecimalField(max_digits=18, decimal_places=2)
-    cota_avans = models.DecimalField(max_digits=18, decimal_places=2, default=0)
-    suma_in_valuta = models.DecimalField(max_digits=18, decimal_places=2, blank=True, null=True)
-    cod_obiectului = models.CharField(max_length=100, blank=True, null=True)
-    cod_valutei = models.CharField(max_length=10, blank=True, null=True)
-    continut_prescurtat = models.TextField(blank=True, null=True)
-    data_indeplinirii_obligatiilor = models.DateField(blank=True, null=True)
-    masura = models.CharField(max_length=255, blank=True, null=True)
-
-    contractul_nu_este_inregistrat_la_trezorerie = models.BooleanField(default=False)
-    prin_achizitii_publice = models.BooleanField(default=False)
-    contract_produse_alimentare = models.BooleanField(default=False)
+    descriere = models.CharField(max_length=255)
 
     class Meta:
-        db_table = "contracte"
-    def suma_ramasa(self):
-        return (self.suma_contractului or 0) - (self.cota_avans or 0)
-    
+        db_table = "eco_coduri"
+
     def __str__(self):
-        return f"{self.nr_contractului} - {self.denumirea}"
+        return f"{self.cod} — {self.descriere}"
 
 
 class BudgetLine(models.Model):
@@ -76,12 +49,8 @@ class BudgetLine(models.Model):
     denumirea = models.CharField(max_length=255)
     suma_alocata = models.DecimalField(max_digits=18, decimal_places=2)
     anul = models.IntegerField(default=2025)
-
-    def suma_cheltuita(self):
-        return self.facturi.aggregate(total=Sum('suma_facturii'))['total'] or 0
-
-    def suma_ramasa(self):
-        return self.suma_alocata - self.suma_cheltuita()
+    file_name = models.CharField(max_length=255, blank=True, null=True)  # Добавляем
+    created_at = models.DateTimeField(auto_now_add=True)  # Добавляем
 
     def __str__(self):
         return f"{self.cod_bugetar} - {self.denumirea}"
@@ -104,6 +73,57 @@ class BudgetLine(models.Model):
         return 0
 
 
+class Contracte(models.Model):
+    cod = models.CharField(max_length=50, unique=True)
+    denumirea = models.CharField(max_length=255)
+    institutia = models.CharField(max_length=255, blank=True, null=True)
+    programul = models.CharField(max_length=255, blank=True, null=True)
+    componente_de_sursa = models.CharField(max_length=255, blank=True, null=True)
+    originea_sursei = models.CharField(max_length=255, blank=True, null=True)
+    iban = models.CharField(max_length=34, blank=True, null=True)
+
+    agent = models.ForeignKey(AgentiComerciali, on_delete=models.CASCADE, related_name="contracte")
+    contul_de_decontare = models.CharField(max_length=255, blank=True, null=True)
+
+    nr_contractului = models.CharField(max_length=100)
+    data_contractului = models.DateField()
+    conditii_plata = models.CharField(max_length=255, blank=True, null=True)
+    termen_valabilitate = models.DateField(blank=True, null=True)
+    suma_contractului = models.DecimalField(max_digits=18, decimal_places=2)
+    cota_avans = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    suma_in_valuta = models.DecimalField(max_digits=18, decimal_places=2, blank=True, null=True)
+    cod_obiectului = models.CharField(max_length=100, blank=True, null=True)
+    cod_valutei = models.CharField(max_length=10, blank=True, null=True)
+    continut_prescurtat = models.TextField(blank=True, null=True)
+    data_indeplinirii_obligatiilor = models.DateField(blank=True, null=True)
+    masura = models.CharField(max_length=255, blank=True, null=True)
+
+    contractul_nu_este_inregistrat_la_trezorerie = models.BooleanField(default=False)
+    prin_achizitii_publice = models.BooleanField(default=False)
+    contract_produse_alimentare = models.BooleanField(default=False)
+    eco = models.ForeignKey("EcoCode", on_delete=models.SET_NULL, null=True, blank=True)
+
+    linie_bugetara = models.ForeignKey(
+        "BudgetLine",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="contracte"
+    )
+
+
+    class Meta:
+        db_table = "contracte"
+    def suma_ramasa(self):
+        return (self.suma_contractului or 0) - (self.cota_avans or 0)
+    
+    def __str__(self):
+        return f"{self.nr_contractului} - {self.denumirea}"
+
+
+
+
+
 class Factura(models.Model):
     contract = models.ForeignKey(Contracte, on_delete=models.CASCADE, related_name="facturi")
     numar = models.CharField(max_length=100)
@@ -111,6 +131,11 @@ class Factura(models.Model):
     suma_facturii = models.DecimalField(max_digits=18, decimal_places=2)
     valuta = models.CharField(max_length=10, blank=True, null=True)
     comentariu = models.TextField(blank=True, null=True)
+
+    contract_is_planned = models.BooleanField(
+        default=True,
+        verbose_name="Contractul este planificat?"  # "Контракт запланирован?"
+    )
 
     budget_line = models.ForeignKey(
         BudgetLine,
@@ -235,6 +260,10 @@ class ContBancar(models.Model):
 
     class Meta:
         db_table = "cont_bancar"
+
+
+
+
 
 
 

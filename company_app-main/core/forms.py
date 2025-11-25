@@ -1,5 +1,5 @@
 from django import forms
-from .models import AgentiComerciali, Contracte, Factura, FacturaItem, Plata, ContBancar
+from .models import AgentiComerciali, Contracte, Factura, FacturaItem, Plata, ContBancar, EcoCode, BudgetLine
 
 
 class AgentiComercialiForm(forms.ModelForm):
@@ -34,21 +34,61 @@ class SupplierForm(forms.ModelForm):
         }
 
 class ContracteForm(forms.ModelForm):
+    eco = forms.ModelChoiceField(
+        queryset=EcoCode.objects.all().order_by("cod"),
+        required=False,
+        label="ECO",
+        widget=forms.Select(attrs={"class": "form-control"})
+    )
+
+    linie_bugetara = forms.ModelChoiceField(
+        queryset=BudgetLine.objects.all().order_by("cod_bugetar"),
+        required=False,
+        label="Linie bugetară",
+        widget=forms.Select(attrs={"class": "form-control"})
+    )
+
     class Meta:
         model = Contracte
         fields = "__all__"
         widgets = {
-            "data_contractului": forms.DateInput(attrs={"type": "date"}),
-            "termen_valabilitate": forms.DateInput(attrs={"type": "date"}),
-            "data_indeplinirii_obligatiilor": forms.DateInput(attrs={"type": "date"}),
+            "data_contractului": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "termen_valabilitate": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "data_indeplinirii_obligatiilor": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        # Обработка ECO-кода, если введён вручную
+        eco_value = self.data.get("eco_select")  # предполагается, что поле называется eco_select
+
+        if eco_value:
+            eco_value = eco_value.strip()
+            eco_obj, created = EcoCode.objects.get_or_create(
+                cod=eco_value,
+                defaults={"descriere": "Cod adăugat automat"}
+            )
+            cleaned_data["eco"] = eco_obj
+        else:
+            cleaned_data["eco"] = None
+
+        return cleaned_data
 
 class FacturaForm(forms.ModelForm):
     warnings = []
 
     class Meta:
         model = Factura
-        fields = "__all__"
+        fields = [
+            'numar',
+            'data_facturii',
+            'suma_facturii',
+            'contract',
+            'comentariu',
+            'budget_line',
+            'contract_is_planned',
+        ]
         widgets = {
             "data_facturii": forms.DateInput(attrs={"type": "date"}),
         }

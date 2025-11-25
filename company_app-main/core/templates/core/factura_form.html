@@ -7,6 +7,13 @@
 <form method="post" class="styled-form">
   {% csrf_token %}
 
+  <div class="form-group" style="margin-bottom: 15px;">
+      <label for="id_contract_is_planned" style="display: flex; align-items: center; cursor: pointer; gap: 5px;">
+          {{ form.contract_is_planned }}
+          <span>Contractul este planificat?</span>
+      </label>
+      <input type="checkbox" id="id_contract_is_planned">
+  </div>
   <table class="form-table">
     <tr>
       <td><label for="id_numar">Număr factură:</label></td>
@@ -33,7 +40,6 @@
 </form>
 
 {% if error_modal %}
-<!-- модальное окно ошибки-->
 <div id="errorModal" class="modal show-error">
   <div class="modal-content">
     <span class="close-btn" id="closeError">&times;</span>
@@ -47,6 +53,7 @@
 {% endif %}
 
 <script>
+// Этот скрипт может оставаться здесь, так как он не использует jQuery
 document.addEventListener('DOMContentLoaded', () => {
   const modal = document.getElementById('errorModal');
   if (modal) {
@@ -58,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 </script>
+
 {% if error_modal %}
   <pre style="color:red;">{{ error_modal }}</pre>
 
@@ -74,3 +82,23 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 {% endif %}
 {% endblock %}
+
+<script>
+$(document).ready(function() {
+    const $checkbox = $('#id_contract_is_planned');
+    const $contractField = $('#id_contract');
+
+    function toggleContractField() {
+        if ($checkbox.is(':checked')) {
+            $contractField.prop('disabled', false);
+        } else {
+            $contractField.prop('disabled', true);
+            $contractField.val('');
+        }
+    }
+
+    $checkbox.on('change', toggleContractField);
+
+    toggleContractField();
+});
+</script>

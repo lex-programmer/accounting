@@ -1,228 +1,247 @@
-{% extends "core/base.html" %}
-{% block title %}Agenți comerciali{% endblock %}
+    {% extends "core/base.html" %}
+    {% block title %}Agenți comerciali{% endblock %}
 
-{% block content %}
-<h2>Lista agenților comerciali</h2>
+    {% block content %}
 
-<div style="margin-bottom: 20px;">
-  <a href="{% url 'import_excel' %}" class="btn btn-secondary">Importă din Excel</a>
-  <a href="{% url 'supplier_add' %}" class="btn btn-primary">Adaugă agent</a>
-</div>
->
-
-<table class="styled-table">
-    <thead>
-        <tr>
-            <th>Cod</th>
-            <th>Denumirea</th>
-            <th>Cod fiscal</th>
-            <th>Denumirea completă</th>
-            <th>Adresa juridică</th>
-            <th>Adresa poștală</th>
-            <th>Telefoane</th>
-            <th>Conducătorul instituției</th>
-            <th>E-mail</th>
-            <th>Acțiuni</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for s in suppliers %}
-        <tr class="supplier-row"
-      data-forma_juridica="{{ s.forma_juridica }}"
-      data-tara="{{ s.tara }}"
-      data-rezident="{{ s.rezident }}"
-      data-cod_tva="{{ s.cod_tva }}"
-      data-cont_bancar_iban="{{ s.cont_bancar_iban }}"
-      data-contract_baza="{{ s.contract_baza }}">
-            <td>{{ s.cod }}</td>
-            <td>{{ s.denumirea }}</td>
-            <td>{{ s.cod_fiscal }}</td>
-            <td>{{ s.denumirea_completa }}</td>
-            <td>{{ s.adresa_juridica }}</td>
-            <td>{{ s.adresa_postala }}</td>
-            <td>{{ s.telefoane }}</td>
-            <td>{{ s.conducator }}</td>
-            <td>{{ s.email }}</td>
-            <td class="actions">
-                <a href="{% url 'supplier_edit' s.pk %}" class="btn btn-edit">Redactează</a>
-                <a href="{% url 'supplier_delete' s.pk %}" class="btn btn-danger">Șterge</a>
-                <a href="{% url 'cont_bancar_list' s.pk %}" class="btn btn-secondary">Conturi</a>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="10" style="text-align:center;">Nu sunt agenți comerciali</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
-<!--модальное окно агентов-->
-<div id="supplierModal" class="modal">
-  <div class="modal-content compact">
-    <span class="close-btn" id="closeSupplierModal">&times;</span>
-    <h3>Detalii agent comercial</h3>
-
-    <div class="modal-body">
-
-      <div class="modal-section">
-        <h4>Informații de bază</h4>
-        <div class="modal-grid">
-          <p><b>Cod:</b> <span id="m_cod"></span></p>
-          <p><b>Denumirea:</b> <span id="m_denumirea"></span></p>
-          <p><b>Cod fiscal:</b> <span id="m_cod_fiscal"></span></p>
-          <p><b>Denumirea completă:</b> <span id="m_denumirea_completa"></span></p>
-          <p><b>Forma juridică:</b> <span id="m_forma_juridica"></span></p>
-          <p><b>Țara:</b> <span id="m_tara"></span></p>
-          <p><b>Rezident:</b> <span id="m_rezident"></span></p>
-        </div>
+    <div class="page-header">
+      <h2>Lista agenților comerciali</h2>
+      <div style="margin-bottom: 20px;">
+        <a href="{% url 'supplier_add' %}" class="btn btn-primary">Adaugă agent</a>
       </div>
-
-      <div class="modal-section">
-        <h4>Adrese și contact</h4>
-        <div class="modal-grid">
-          <p><b>Adresa juridică:</b> <span id="m_adresa_juridica"></span></p>
-          <p><b>Adresa poștală:</b> <span id="m_adresa_postala"></span></p>
-          <p><b>Telefoane:</b> <span id="m_telefoane"></span></p>
-          <p><b>E-mail:</b> <span id="m_email"></span></p>
-          <p><b>Conducător:</b> <span id="m_conducator"></span></p>
-        </div>
-      </div>
-
-      <div class="modal-section">
-        <h4>Date financiare</h4>
-        <div class="modal-grid">
-          <p><b>Cod TVA:</b> <span id="m_cod_tva"></span></p>
-          <p><b>Cont bancar IBAN:</b> <span id="m_cont_bancar_iban"></span></p>
-          <p><b>Contract bază:</b> <span id="m_contract_baza"></span></p>
-        </div>
-      </div>
-
     </div>
-  </div>
-</div>
 
-<!--css-->
-<style>
-.modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-}
+    <div class="table-scroll">
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Cod</th>
+                <th>Denumirea</th>
+                <th>Cod fiscal</th>
+                <th>Denumirea completă</th>
+                <th>Adresa juridică</th>
+                <th>Adresa poștală</th>
+                <th>Telefoane</th>
+                <th>Conducătorul instituției</th>
+                <th>E-mail</th>
+                <th>Acțiuni</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in suppliers %}
+            <tr class="supplier-row"
+          data-forma_juridica="{{ s.forma_juridica }}"
+          data-tara="{{ s.tara }}"
+          data-rezident="{{ s.rezident }}"
+          data-cod_tva="{{ s.cod_tva }}"
+          data-cont_bancar_iban="{{ s.cont_bancar_iban }}"
+          data-contract_baza="{{ s.contract_baza }}">
+                <td>{{ s.cod }}</td>
+                <td>{{ s.denumirea }}</td>
+                <td>{{ s.cod_fiscal }}</td>
+                <td>{{ s.denumirea_completa }}</td>
+                <td>{{ s.adresa_juridica }}</td>
+                <td>{{ s.adresa_postala }}</td>
+                <td>{{ s.telefoane }}</td>
+                <td>{{ s.conducator }}</td>
+                <td>{{ s.email }}</td>
+                <td class="actions">
+                    <a href="{% url 'supplier_edit' s.pk %}" class="btn btn-edit">Redactează</a>
+                    <a href="{% url 'supplier_delete' s.pk %}" class="btn btn-danger">Șterge</a>
+                    <a href="{% url 'cont_bancar_list' s.pk %}" class="btn btn-secondary">Conturi</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="10" style="text-align:center;">Nu sunt agenți comerciali</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
 
-.modal-content {
-  background-color: #fff;
-  color: #000;
-  border-radius: 12px;
-  padding: 25px 35px;
-  width: 600px;
-  max-width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
-  transition: background-color 0.3s, color 0.3s;
-}
+    <!--модальное окно агентов-->
+    <div id="supplierModal" class="modal">
+      <div class="modal-content compact">
+        <span class="close-btn" id="closeSupplierModal">&times;</span>
+        <h3>Detalii agent comercial</h3>
 
-.dark-theme .modal {
-  background-color: rgba(0, 0, 0, 0.8);
-}
+        <div class="modal-body">
 
-.dark-theme .modal-content {
-  background-color: #121212;
-  color: #f1f1f1;
-  box-shadow: 0 0 25px rgba(255, 255, 255, 0.05);
-}
+          <div class="modal-section">
+            <h4>Informații de bază</h4>
+            <div class="modal-grid">
+              <p><b>Cod:</b> <span id="m_cod"></span></p>
+              <p><b>Denumirea:</b> <span id="m_denumirea"></span></p>
+              <p><b>Cod fiscal:</b> <span id="m_cod_fiscal"></span></p>
+              <p><b>Denumirea completă:</b> <span id="m_denumirea_completa"></span></p>
+              <p><b>Forma juridică:</b> <span id="m_forma_juridica"></span></p>
+              <p><b>Țara:</b> <span id="m_tara"></span></p>
+              <p><b>Rezident:</b> <span id="m_rezident"></span></p>
+            </div>
+          </div>
 
-.light-theme .modal {
-  background-color: rgba(255, 255, 255, 0.4);
-}
+          <div class="modal-section">
+            <h4>Adrese și contact</h4>
+            <div class="modal-grid">
+              <p><b>Adresa juridică:</b> <span id="m_adresa_juridica"></span></p>
+              <p><b>Adresa poștală:</b> <span id="m_adresa_postala"></span></p>
+              <p><b>Telefoane:</b> <span id="m_telefoane"></span></p>
+              <p><b>E-mail:</b> <span id="m_email"></span></p>
+              <p><b>Conducător:</b> <span id="m_conducator"></span></p>
+            </div>
+          </div>
 
-.light-theme .modal-content {
-  background-color: #fefefe;
-  color: #000;
-  box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
-}
+          <div class="modal-section">
+            <h4>Date financiare</h4>
+            <div class="modal-grid">
+              <p><b>Cod TVA:</b> <span id="m_cod_tva"></span></p>
+              <p><b>Cont bancar IBAN:</b> <span id="m_cont_bancar_iban"></span></p>
+              <p><b>Contract bază:</b> <span id="m_contract_baza"></span></p>
+            </div>
+          </div>
 
-.close-btn {
-  float: right;
-  font-size: 24px;
-  cursor: pointer;
-  color: #aaa;
-  transition: color 0.2s;
-}
-.close-btn:hover {
-  color: #1db954;
-}
+        </div>
+      </div>
+    </div>
 
-.modal-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px 20px;
-}
-.modal-grid p {
-  margin: 0;
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(100,100,100,0.2);
-}
+    <!--css-->
+    <style>
 
-.modal-section {
-  margin-bottom: 20px;
-}
-.modal-section h4 {
-  margin-bottom: 10px;
-  color: #1db954;
-}
-</style>
-<!--js-->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  console.log("✅ Supplier modal script loaded!");
+    .page-header {
+      margin-left: 0px;
+      padding: 20px;
+    }
 
-  const rows = document.querySelectorAll('.styled-table tbody tr');
-  const modal = document.getElementById('supplierModal');
-  const closeBtn = document.getElementById('closeSupplierModal');
+    .table-scroll {
+      overflow-x: auto;
+      max-width: 100%;
+      padding-bottom: 10px;
+    }
 
-  const yesNo = v => (v === "True" || v === "true" || v === "1") ? "NU" : "Da";
+    .table-scroll table {
+      width: max-content;
+      border-collapse: collapse;
+    }
 
-  rows.forEach(row => {
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
 
-    if (!row.querySelector('.actions')) return;
+    .modal-content {
+      background-color: #fff;
+      color: #000;
+      border-radius: 12px;
+      padding: 25px 35px;
+      width: 600px;
+      max-width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
+      transition: background-color 0.3s, color 0.3s;
+    }
 
-    row.addEventListener('click', function(e) {
-      if (e.target.closest('.btn')) return;
+    .dark-theme .modal {
+      background-color: rgba(0, 0, 0, 0.8);
+    }
 
-      const cells = this.querySelectorAll('td');
+    .dark-theme .modal-content {
+      background-color: #121212;
+      color: #f1f1f1;
+      box-shadow: 0 0 25px rgba(255, 255, 255, 0.05);
+    }
 
-      document.getElementById('m_cod').textContent = cells[0].innerText.trim() || "—";
-      document.getElementById('m_denumirea').textContent = cells[1].innerText.trim() || "—";
-      document.getElementById('m_cod_fiscal').textContent = cells[2].innerText.trim() || "—";
-      document.getElementById('m_denumirea_completa').textContent = cells[3].innerText.trim() || "—";
-      document.getElementById('m_adresa_juridica').textContent = cells[4].innerText.trim() || "—";
-      document.getElementById('m_adresa_postala').textContent = cells[5].innerText.trim() || "—";
-      document.getElementById('m_telefoane').textContent = cells[6].innerText.trim() || "—";
-      document.getElementById('m_conducator').textContent = cells[7].innerText.trim() || "—";
-      document.getElementById('m_email').textContent = cells[8].innerText.trim() || "—";
+    .light-theme .modal {
+      background-color: rgba(255, 255, 255, 0.4);
+    }
 
-      document.getElementById('m_forma_juridica').textContent = this.dataset.forma_juridica || "—";
-      document.getElementById('m_tara').textContent = this.dataset.tara || "—";
-      document.getElementById('m_cod_tva').textContent = this.dataset.cod_tva || "—";
-      document.getElementById('m_cont_bancar_iban').textContent = this.dataset.cont_bancar_iban || "—";
-      document.getElementById('m_contract_baza').textContent = this.dataset.contract_baza || "—";
-      document.getElementById('m_rezident').textContent = yesNo(this.dataset.rezident);
+    .light-theme .modal-content {
+      background-color: #fefefe;
+      color: #000;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
+    }
 
-      modal.style.display = 'flex';
+    .close-btn {
+      float: right;
+      font-size: 24px;
+      cursor: pointer;
+      color: #aaa;
+      transition: color 0.2s;
+    }
+    .close-btn:hover {
+      color: #1db954;
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px 20px;
+    }
+    .modal-grid p {
+      margin: 0;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(100,100,100,0.2);
+    }
+
+    .modal-section {
+      margin-bottom: 20px;
+    }
+    .modal-section h4 {
+      margin-bottom: 10px;
+      color: #1db954;
+    }
+    </style>
+    <!--js-->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log("✅ Supplier modal script loaded!");
+
+      const rows = document.querySelectorAll('.styled-table tbody tr');
+      const modal = document.getElementById('supplierModal');
+      const closeBtn = document.getElementById('closeSupplierModal');
+
+      const yesNo = v => (v === "True" || v === "true" || v === "1") ? "NU" : "Da";
+
+      rows.forEach(row => {
+
+        if (!row.querySelector('.actions')) return;
+
+        row.addEventListener('click', function(e) {
+          if (e.target.closest('.btn')) return;
+
+          const cells = this.querySelectorAll('td');
+
+          document.getElementById('m_cod').textContent = cells[0].innerText.trim() || "—";
+          document.getElementById('m_denumirea').textContent = cells[1].innerText.trim() || "—";
+          document.getElementById('m_cod_fiscal').textContent = cells[2].innerText.trim() || "—";
+          document.getElementById('m_denumirea_completa').textContent = cells[3].innerText.trim() || "—";
+          document.getElementById('m_adresa_juridica').textContent = cells[4].innerText.trim() || "—";
+          document.getElementById('m_adresa_postala').textContent = cells[5].innerText.trim() || "—";
+          document.getElementById('m_telefoane').textContent = cells[6].innerText.trim() || "—";
+          document.getElementById('m_conducator').textContent = cells[7].innerText.trim() || "—";
+          document.getElementById('m_email').textContent = cells[8].innerText.trim() || "—";
+
+          document.getElementById('m_forma_juridica').textContent = this.dataset.forma_juridica || "—";
+          document.getElementById('m_tara').textContent = this.dataset.tara || "—";
+          document.getElementById('m_cod_tva').textContent = this.dataset.cod_tva || "—";
+          document.getElementById('m_cont_bancar_iban').textContent = this.dataset.cont_bancar_iban || "—";
+          document.getElementById('m_contract_baza').textContent = this.dataset.contract_baza || "—";
+          document.getElementById('m_rezident').textContent = yesNo(this.dataset.rezident);
+
+          modal.style.display = 'flex';
+        });
+      });
+
+      closeBtn.addEventListener('click', () => modal.style.display = 'none');
+      window.addEventListener('click', e => {
+        if (e.target === modal) modal.style.display = 'none';
+      });
     });
-  });
-
-  closeBtn.addEventListener('click', () => modal.style.display = 'none');
-  window.addEventListener('click', e => {
-    if (e.target === modal) modal.style.display = 'none';
-  });
-});
-</script>
-{% endblock %}
+    </script>
+    {% endblock %}
 

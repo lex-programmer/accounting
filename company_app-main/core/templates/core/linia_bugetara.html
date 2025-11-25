@@ -1,0 +1,615 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Linia Bugetara{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <!-- Заголовок -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Linia Bugetara</h1>
+            </div>
+
+            <!-- Основная карточка с drag&drop -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-excel me-2"></i>
+                        Importă linii bugetare din Excel
+                    </h5>
+                </div>
+
+                <div class="card-body p-4">
+                    <!-- Информация о типе импорта -->
+                    <div class="mb-4">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Import linii bugetare</strong>
+                            <br>
+                            <small>Fișierul trebuie să conțină coduri bugetare, denumiri și sume alocate</small>
+                        </div>
+                    </div>
+
+                    <!-- Область перетаскивания -->
+                    <div id="dropArea" class="drop-zone border-2 border-dashed rounded-3 p-5 text-center">
+                        <div class="drop-content">
+                            <i class="fas fa-cloud-upload-alt fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">Trageți fișierul Excel aici</h4>
+                            <p class="text-muted mb-3">sau faceți clic pentru a selecta fișierul</p>
+                            <small class="text-muted">Suportă formatele .xlsx, .xls</small>
+                        </div>
+                        <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+                    </div>
+
+                    <!-- Информация о загруженном файле -->
+                    <div id="fileInfo" class="mt-3" style="display: none;">
+                        <div class="alert alert-info d-flex align-items-center">
+                            <i class="fas fa-file-excel text-success me-2"></i>
+                            <div>
+                                <strong id="fileName"></strong>
+                                <div id="fileSize" class="text-muted small"></div>
+                            </div>
+                            <button type="button" id="removeFile" class="btn-close ms-auto" aria-label="Remove"></button>
+                        </div>
+                    </div>
+
+                    <!-- Кнопка загрузки -->
+                    <div class="text-center mt-4">
+                        <button id="uploadBtn" class="btn btn-success btn-lg" disabled>
+                            <i class="fas fa-upload me-2"></i>
+                            Importă liniile bugetare
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Результаты обработки -->
+            <div id="results" class="mt-4" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Rezultatele importului</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="successMessage" class="alert alert-success" style="display: none;"></div>
+                        <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
+                        <div id="errorsList" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Секция для отображения бюджетных линий -->
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table me-2"></i>
+                        Linii Bugetare Importate
+                    </h5>
+                </div>
+
+                <div class="card-body">
+                    <!-- Поиск по коду -->
+                    <div class="row mb-4">
+                        <div class="col-md-9">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" id="searchBudgetCode" class="form-control"
+                                       placeholder="Caută după cod... (apasă Enter)">
+                                <input type="text" id="searchBudgetYear" class="form-control"
+                                        placeholder="Anul (ex: 2024)">
+                                <button class="btn btn-outline-primary" type="button" onclick="searchBudgetLines()">
+                                    <i class="fas fa-search me-1"></i> Caută
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <small class="text-muted">Total: {{ budget_lines|length }} linii bugetare</small>
+                        </div>
+                    </div>
+
+
+                    <!-- Блок для отображения результатов поиска -->
+                    <div class="search-results-info mb-3" style="display: none;"></div>
+
+                    <!-- Таблица бюджетных линий -->
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="15%">Cod</th>
+                                    <th width="40%">Denumirea indicatorilor</th>
+                                    <th width="15%">Suma alocată</th>
+                                    <th width="15%">Suma cheltuită</th>
+                                    <th width="15%">Suma rămasă</th>
+                                </tr>
+                            </thead>
+                            <tbody id="budgetTableBody">
+                                {% for line in budget_lines %}
+                                <tr>
+                                    <td><strong>{{ line.cod_bugetar }}</strong></td>
+                                    <td>{{ line.denumirea }}</td>
+                                    <td>{{ line.suma_alocata|floatformat:2 }} MDL</td>
+                                    <td>{{ line.suma_cheltuita|floatformat:2 }} MDL</td>
+                                    <td>
+                                        <span class="badge {% if line.suma_ramasa > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ line.suma_ramasa|floatformat:2 }} MDL
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Nu există linii bugetare importate. Încărcați un fișier Excel.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.drop-zone {
+    border: 2px dashed #dee2e6;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-height: 250px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drop-zone:hover {
+    border-color: #0d6efd;
+    background-color: #e7f1ff;
+}
+
+.drop-zone.dragover {
+    border-color: #0d6efd;
+    background-color: #d1e7ff;
+    transform: scale(1.02);
+}
+
+.drop-zone.has-file {
+    border-color: #198754;
+    background-color: #d1e7dd;
+}
+
+.border-dashed {
+    border-style: dashed !important;
+}
+
+.drop-content {
+    transition: all 0.3s ease;
+}
+
+.drop-zone.dragover .drop-content {
+    transform: scale(1.05);
+}
+
+/* Стили для таблицы бюджетных линий */
+.table-responsive {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.table th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 10;
+}
+
+.badge.bg-success {
+    background-color: #198754 !important;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+/* Стили для поиска */
+.highlighted-row {
+    background-color: #d1edff !important;
+    border-left: 4px solid #0d6efd;
+    animation: highlight-pulse 2s ease-in-out;
+}
+
+@keyframes highlight-pulse {
+    0% { background-color: #fff3cd; }
+    50% { background-color: #d1edff; }
+    100% { background-color: #d1edff; }
+}
+
+.search-results-info .alert {
+    margin-bottom: 0;
+    border-radius: 0.375rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropArea = document.getElementById('dropArea');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const removeFile = document.getElementById('removeFile');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const results = document.getElementById('results');
+    const successMessage = document.getElementById('successMessage');
+    const errorMessage = document.getElementById('errorMessage');
+    const errorsList = document.getElementById('errorsList');
+
+    let currentFile = null;
+
+    // Обработчики для drag & drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight() {
+        dropArea.classList.add('dragover');
+    }
+
+    function unhighlight() {
+        dropArea.classList.remove('dragover');
+    }
+
+    // Обработка drop
+    dropArea.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
+
+    // Обработка клика по области
+    dropArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // Обработка выбора файла через input
+    fileInput.addEventListener('change', function() {
+        handleFiles(this.files);
+    });
+
+    // Удаление файла
+    removeFile.addEventListener('click', function(e) {
+        e.preventDefault();
+        resetFileInput();
+    });
+
+    function handleFiles(files) {
+        if (files.length > 0) {
+            const file = files[0];
+
+            // Проверка типа файла
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                alert('Vă rugăm să selectați un fișier Excel (.xlsx sau .xls)');
+                return;
+            }
+
+            currentFile = file;
+            updateFileInfo(file);
+            enableUploadButton();
+        }
+    }
+
+    function updateFileInfo(file) {
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        fileInfo.style.display = 'block';
+        dropArea.classList.add('has-file');
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function resetFileInput() {
+        fileInput.value = '';
+        fileInfo.style.display = 'none';
+        dropArea.classList.remove('has-file');
+        uploadBtn.disabled = true;
+        currentFile = null;
+        hideResults();
+    }
+
+    function enableUploadButton() {
+        uploadBtn.disabled = false;
+    }
+
+    function disableUploadButton() {
+        uploadBtn.disabled = true;
+    }
+
+    function hideResults() {
+        results.style.display = 'none';
+        successMessage.style.display = 'none';
+        errorMessage.style.display = 'none';
+        errorsList.style.display = 'none';
+    }
+
+    function showSuccess(message) {
+        successMessage.textContent = message;
+        successMessage.style.display = 'block';
+        errorMessage.style.display = 'none';
+        errorsList.style.display = 'none';
+        results.style.display = 'block';
+    }
+
+    function showError(message, errors = []) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
+        successMessage.style.display = 'none';
+
+        if (errors.length > 0) {
+            errorsList.innerHTML = '<h6>Erori detaliate:</h6><ul class="mb-0">' +
+                errors.map(error => `<li class="small">${error}</li>`).join('') +
+                '</ul>';
+            errorsList.style.display = 'block';
+        } else {
+            errorsList.style.display = 'none';
+        }
+
+        results.style.display = 'block';
+    }
+
+    // Обработка загрузки
+    uploadBtn.addEventListener('click', function() {
+        if (!currentFile) return;
+
+        const formData = new FormData();
+        formData.append('excel_file', currentFile);
+        formData.append('import_type', 'budget_lines');
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        disableUploadButton();
+        uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Se importă...';
+
+        fetch('{% url "handle_excel_upload" %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess(data.message);
+                resetFileInput();
+                // Всегда перезагружаем страницу после импорта
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showError(data.message, data.errors || []);
+                enableUploadButton();
+            }
+        })
+        .catch(error => {
+            showError('Eroare la încărcare: ' + error.message);
+            enableUploadButton();
+        })
+        .finally(() => {
+            uploadBtn.innerHTML = '<i class="fas fa-upload me-2"></i>Importă liniile bugetare';
+        });
+    });
+});
+
+// AJAX поиск бюджетных линий
+function searchBudgetLines() {
+    const searchCode = document.getElementById('searchBudgetCode').value.trim();
+    const searchYearInput = document.getElementById('searchBudgetYear').value.trim();
+    const searchYear = searchYearInput !== '' ? searchYearInput : '2025';
+    const resultsInfo = document.querySelector('.search-results-info');
+    const tbody = document.getElementById('budgetTableBody');
+
+    // Если поиск пустой, показываем все данные
+    if (searchCode === '') {
+        location.reload();
+        return;
+    }
+
+    // Показываем индикатор загрузки
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="5" class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Se caută...</span>
+                </div>
+                <p class="mt-2 text-muted">Se caută...</p>
+            </td>
+        </tr>
+    `;
+
+    // AJAX запрос
+    fetch(`/search-budget-lines/?cod=${encodeURIComponent(searchCode)}&anul=${searchYear}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displaySearchResults(data);
+        } else {
+            showSearchError(data.error);
+        }
+    })
+    .catch(error => {
+        showSearchError('Eroare la căutare: ' + error.message);
+    });
+}
+
+// Отображение результатов поиска
+function displaySearchResults(data) {
+    const tbody = document.getElementById('budgetTableBody');
+    const resultsInfo = document.querySelector('.search-results-info');
+
+    if (data.budget_lines.length > 0) {
+        // Показываем результаты
+        tbody.innerHTML = '';
+
+        data.budget_lines.forEach((line, index) => {
+            const isFirst = index === 0;
+            const rowClass = isFirst ? 'table-success highlighted-row' : '';
+
+            const row = `
+                <tr class="${rowClass}" id="row-${line.id}">
+                    <td><strong>${line.cod_bugetar}</strong></td>
+                    <td>${line.denumirea}</td>
+                    <td>${line.suma_alocata.toFixed(2)} MDL</td>
+                    <td>${line.suma_cheltuita.toFixed(2)} MDL</td>
+                    <td>
+                        <span class="badge ${line.suma_ramasa > 0 ? 'bg-success' : 'bg-danger'}">
+                            ${line.suma_ramasa.toFixed(2)} MDL
+                        </span>
+                    </td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+
+        // Информация о результатах
+        resultsInfo.innerHTML = `
+            <div class="alert alert-info d-flex justify-content-between align-items-center py-2">
+                <div>
+                    <i class="fas fa-search me-2"></i>
+                    Găsite ${data.count} linii pentru codul "<strong>${data.search_code}</strong>"
+                </div>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary me-2" onclick="clearSearch()">
+                        <i class="fas fa-times me-1"></i>Șterge căutarea
+                    </button>
+                    ${data.count > 1 ? `
+                    <button class="btn btn-sm btn-primary" onclick="scrollToFirstResult()">
+                        <i class="fas fa-arrow-down me-1"></i>Mergi la primul rezultat
+                    </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        resultsInfo.style.display = 'block';
+
+        // Прокручиваем к первому результату
+        setTimeout(() => {
+            scrollToFirstResult();
+        }, 100);
+
+    } else {
+        // Нет результатов
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted py-4">
+                    <i class="fas fa-search me-2"></i>
+                    Nu s-au găsit linii pentru codul "<strong>${data.search_code}</strong>"
+                </td>
+            </tr>
+        `;
+
+        resultsInfo.innerHTML = `
+            <div class="alert alert-warning py-2">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Nu s-au găsit rezultate pentru "${data.search_code}"
+                <button class="btn btn-sm btn-outline-secondary ms-2" onclick="clearSearch()">
+                    Arată toate liniile
+                </button>
+            </div>
+        `;
+        resultsInfo.style.display = 'block';
+    }
+}
+
+// Очистка поиска
+function clearSearch() {
+    document.getElementById('searchBudgetCode').value = '';
+    location.reload();
+}
+
+// Прокрутка к первому результату
+function scrollToFirstResult() {
+    const firstRow = document.querySelector('.highlighted-row');
+    if (firstRow) {
+        firstRow.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest'
+        });
+
+        // Добавляем анимацию выделения
+        firstRow.style.animation = 'highlight-pulse 2s ease-in-out';
+        setTimeout(() => {
+            firstRow.style.animation = '';
+        }, 2000);
+    }
+}
+
+// Обработка ошибок
+function showSearchError(error) {
+    const tbody = document.getElementById('budgetTableBody');
+    const resultsInfo = document.querySelector('.search-results-info');
+
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="5" class="text-center text-danger py-4">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                ${error}
+            </td>
+        </tr>
+    `;
+
+    resultsInfo.style.display = 'none';
+}
+
+// Обработка нажатия Enter
+document.getElementById('searchBudgetCode').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        searchBudgetLines();
+    }
+});
+
+// Автопоиск с задержкой
+let searchTimeout;
+document.getElementById('searchBudgetCode').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    const searchValue = this.value.trim();
+
+    if (searchValue.length >= 2) {
+        searchTimeout = setTimeout(() => {
+            searchBudgetLines();
+        }, 500);
+    } else if (searchValue.length === 0) {
+        clearSearch();
+    }
+});
+</script>
+{% endblock %}

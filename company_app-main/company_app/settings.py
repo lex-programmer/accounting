@@ -1,6 +1,7 @@
+import os
 from pathlib import Path
 from dotenv import load_dotenv
-import os
+
 
 # Загружаем переменные окружения из .env файла
 load_dotenv()
@@ -46,6 +47,7 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
+                'django.template.context_processors.static',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
@@ -97,7 +99,10 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
+    BASE_DIR / "core" / "static" / "core",
 ]
+
+STATIC_ROOT = BASE_DIR / 'staticfiles_collected'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

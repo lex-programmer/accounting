@@ -21,12 +21,13 @@
     {% if request.user.is_authenticated %}
 
     <div class="sidebar">
-        <h2>Company</h2>
+        <img src="{% static 'core/img/Copilot_20251120_115112.png' %}" alt="USARB Accounting Logo" class="sidebar-logo">
         <ul>
             <li><a class="menu-btn" href="{% url 'supplier_list' %}">Agenți comerciali</a></li>
             <li><a class="menu-btn" href="{% url 'contract_list' %}">Contracte</a></li>
             <li><a class="menu-btn" href="{% url 'factura_list' %}">Facturi</a></li>
             <li><a class="menu-btn" href="{% url 'plata_list' %}">Plăți</a></li>
+            <li><a class="menu-btn" href="{% url 'linia_bugetara' %}">Linia bugetară</a> </li>
             <li><a class="menu-btn" href="{% url 'factura_archive' %}">Arhivă</a></li>
         </ul>
     </div>
@@ -49,6 +50,8 @@
             {% endblock %}
         </section>
     </div>
+
+    <script src="{% static 'core/vendor/jquery-3.7.1.min.js' %}"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
