@@ -117,23 +117,18 @@
     <a href="{% url 'contract_list' %}" class="btn btn-secondary">Înapoi</a>
 </form>
 
-<script src="{% static 'core/vendor/jquery-ui.min.js' %}"></script>
-<link rel="stylesheet" href="{% static 'core/vendor/jquery-ui.min.css' %}">
+{% endblock %}
 
+{% block extra_js %}
 <script>
 $(function() {
-    // 1. ECO Autocomplete (динамический URL)
-    $("#id_eco").autocomplete({
-        source: "{% url 'eco_autocomplete' %}",
-        minLength: 1
-    });
+    // 1. ECO Autocomplete УДАЛЕН. Поле 'eco' теперь - чистый <select> благодаря forms.py.
 
-    // 2. Codul Obiectului Autocomplete (Budget Line) (динамический URL)
+    // 2. Codul Obiectului Autocomplete ОСТАВЛЕН. Это CharField, который требует Autocomplete.
     $("#id_cod_obiectului").autocomplete({
         source: "{% url 'budget_line_autocomplete' %}",
         minLength: 1
     });
 });
 </script>
-
 {% endblock %}

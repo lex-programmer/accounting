@@ -1,4 +1,6 @@
 {% extends "core/base.html" %}
+{% load static %}
+
 {% block title %}Adaugă / Redactează factură{% endblock %}
 
 {% block content %}
@@ -10,7 +12,7 @@
   <div class="form-group" style="margin-bottom: 15px;">
       <label for="id_contract_is_planned" style="display: flex; align-items: center; cursor: pointer; gap: 5px;">
           {{ form.contract_is_planned }}
-          <span>Contractul este planificat?</span>
+          Contractul este planificat?
       </label>
       <input type="checkbox" id="id_contract_is_planned">
   </div>
@@ -24,14 +26,25 @@
     <tr>
       <td><label for="id_suma_facturii">Suma facturii:</label></td>
       <td>{{ form.suma_facturii }}</td>
-      <td><label for="id_contract">Contract:</label></td>
-      <td>{{ form.contract }}</td>
+
+      <td id="contract-label-cell"><label for="id_contract">Contract:</label></td>
+      <td id="contract-field-cell">{{ form.contract }}</td>
+
+      <td id="eco-label-cell" style="display:none;"><label for="id_eco">Cod ECO:</label></td>
+      <td id="eco-field-cell" style="display:none;">{{ form.eco }}</td>
+    </tr>
+
+    <tr>
+      <td><label for="id_budget_line">Linie bugetară:</label></td>
+      <td>{{ form.budget_line }}</td>
+      <td><label for="id_valuta">Valuta:</label></td>
+      <td>{{ form.valuta }}</td>
     </tr>
     <tr>
-      <td><label for="id_descriere">Descriere (opțional):</label></td>
+      <td><label for="id_comentariu">Descriere (opțional):</label></td>
       <td colspan="3">{{ form.comentariu }}</td>
     </tr>
-  </table>
+    </table>
 
   <div class="form-actions">
     <button type="submit" class="btn btn-primary">Salvează</button>
@@ -53,7 +66,6 @@
 {% endif %}
 
 <script>
-// Этот скрипт может оставаться здесь, так как он не использует jQuery
 document.addEventListener('DOMContentLoaded', () => {
   const modal = document.getElementById('errorModal');
   if (modal) {
@@ -83,22 +95,56 @@ document.addEventListener('DOMContentLoaded', () => {
 {% endif %}
 {% endblock %}
 
+{% block extra_js %}
 <script>
 $(document).ready(function() {
     const $checkbox = $('#id_contract_is_planned');
+
+    // Элементы для Contract
+    const $contractLabelCell = $('#contract-label-cell');
+    const $contractFieldCell = $('#contract-field-cell');
     const $contractField = $('#id_contract');
 
-    function toggleContractField() {
+    // Элементы для ECO
+    const $ecoLabelCell = $('#eco-label-cell');
+    const $ecoFieldCell = $('#eco-field-cell');
+    const $ecoField = $('#id_eco');
+
+    function toggleContractEcoFields() {
         if ($checkbox.is(':checked')) {
-            $contractField.prop('disabled', false);
+            // Сценарий 1: Contractul este planificat? = TRUE
+            $contractLabelCell.show();
+            $contractFieldCell.show();
+            $contractField.prop('disabled', false).val($contractField.attr('data-original-value'));
+
+            // Скрываем ECO
+            $ecoLabelCell.hide();
+            $ecoFieldCell.hide();
+            $ecoField.prop('disabled', true).val('');
+
         } else {
+            // Сценарий 2: Contractul este planificat? = FALSE
+            $contractLabelCell.hide();
+            $contractFieldCell.hide();
+
+            $contractField.attr('data-original-value', $contractField.val()).val('');
             $contractField.prop('disabled', true);
-            $contractField.val('');
+
+            // Показываем ECO
+            $ecoLabelCell.show();
+            $ecoFieldCell.show();
+            $ecoField.prop('disabled', false);
         }
     }
 
-    $checkbox.on('change', toggleContractField);
+    // Сохраняем изначальное состояние (для редактирования)
+    $contractField.attr('data-original-value', $contractField.val());
 
-    toggleContractField();
+    // 1. Применяем логику при загрузке страницы
+    toggleContractEcoFields();
+
+    // 2. Применяем логику при изменении чекбокса
+    $checkbox.on('change', toggleContractEcoFields);
 });
 </script>
+{% endblock %}
