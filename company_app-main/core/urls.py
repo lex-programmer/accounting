@@ -18,6 +18,7 @@ urlpatterns = [
     path('contracts/add/', views.contract_add, name='contract_add'),
     path('contracts/<int:pk>/edit/', views.contract_edit, name='contract_edit'),
     path('contracts/<int:pk>/delete/', views.contract_delete, name='contract_delete'),
+    path('contracte/report/csv/', views.contract_report_csv, name='contract_report_csv'),
 
     # Накладные (Facturi)
     path('facturi/', views.factura_list, name='factura_list'),
@@ -26,6 +27,8 @@ urlpatterns = [
     path('facturi/<int:pk>/delete/', views.factura_delete, name='factura_delete'),
     path("factura/<int:pk>/", views.factura_detail, name="factura_detail"),
     path("facturi/archive/", views.factura_archive, name="factura_archive"),
+    path('facturi/report/csv/', views.factura_report_csv, name='factura_report_csv'),
+    path('facturi/report/pdf/', views.factura_archive_pdf, name='factura_archive_pdf'),
 
     # Платежи (Plati)
     path('plati/', views.plata_list, name='plata_list'),

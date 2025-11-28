@@ -4,7 +4,17 @@
 {% block content %}
 <h2>Lista facturilor</h2>
 
-<a href="{% url 'factura_add' %}" class="btn btn-primary">Adaugă factură</a>
+<div class="header-actions" style="margin-bottom: 20px;">
+    <a href="{% url 'factura_add' %}" class="btn btn-primary">Adaugă factură</a>
+
+    <a href="{% url 'factura_report_csv' %}" class="btn btn-secondary" style="margin-left: 10px;">
+        Exportă Facturi (CSV)
+    </a>
+
+    <a href="{% url 'factura_archive_pdf' %}" class="btn btn-secondary" style="margin-left: 10px;">
+        Exportă Facturi (PDF)
+    </a>
+</div>
 
 <table class="styled-table">
   <thead>

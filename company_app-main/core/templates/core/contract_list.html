@@ -4,7 +4,13 @@
 {% block content %}
 <h2>Lista contractelor</h2>
 
-<a href="{% url 'contract_add' %}" class="btn btn-primary">Adaugă contract</a>
+<div class="header-actions" style="margin-bottom: 20px;">
+    <a href="{% url 'contract_add' %}" class="btn btn-primary">Adaugă contract</a>
+
+    <a href="{% url 'contract_report_csv' %}" class="btn btn-secondary" style="margin-left: 10px;">
+        Exportă Contracte (CSV)
+    </a>
+</div>
 <div class="table-wrapper">
 <table class="styled-table" id="contracts-table">
     <thead>
@@ -39,7 +45,7 @@
       data-cont="{{ c.contul_de_decontare }}"
       data-program="{{ c.programul }}"
       data-continut="{{ c.continut_prescurtat|escapejs }}"
-   
+
       data-componente_de_sursa="{{ c.componente_de_sursa }}"
       data-originea_sursei="{{ c.originea_sursei }}"
       data-iban="{{ c.iban }}"
@@ -81,7 +87,6 @@
 </table>
 </div>
 
-<!--модальное окно контрактов-->
 <div id="contractModal" class="modal">
   <div class="modal-content compact">
     <span class="close-btn" id="closeModal">&times;</span>
@@ -137,7 +142,6 @@
   </div>
 </div>
 
-<!--css-->
 <style>
 .modal {
   display: none;
@@ -214,7 +218,6 @@
 </style>
 
 
-<!-- js-->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   console.log("✅ Script loaded!");
@@ -229,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   rows.forEach(row => {
     row.addEventListener('click', function(e) {
-      if (e.target.closest('.btn')) return; 
+      if (e.target.closest('.btn')) return;
 
       // informatii generale
       document.getElementById('m_cod').textContent = this.dataset.cod || "—";
@@ -267,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  //закрытие окна 
+  //закрытие окна
   closeModalBtn.addEventListener('click', () => modal.style.display = 'none');
   window.addEventListener('click', e => {
     if (e.target === modal) modal.style.display = 'none';
