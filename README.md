@@ -16,14 +16,14 @@ source venv/bin/activate  # macOS/Linux
 pip install -r requirements.txt
 python -m pip install --upgrade pip  # при необходимости
 python manage.py migrate
-python manage.py createsuperuser
+python3 company_app-main/manage.py  createsuperuser
 
 # Сброс пароля суперпользователя (если нужно)
 
-python manage.py shell
+python3 company_app-main/manage.py shell
 from django.contrib.auth.models import User
 user = User.objects.get(username='admin')
-user.set_password('новый_пароль')
+user.set_password('planificare')
 user.save()
 exit()
 

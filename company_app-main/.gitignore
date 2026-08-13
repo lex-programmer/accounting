@@ -1,16 +1,37 @@
+# Python: Скомпилированные файлы и кэш
 __pycache__/
 *.pyc
-db.sqlite3
-.env
-/static/
-media/
-*.log
-.vscode/
-.idea/
-venv/
 *.pyo
 *.pyd
+
+# Окружение: Игнорируем и venv, и .venv (современный стандарт)
+venv/
+.venv/
+
+# Базы данных
+db.sqlite3
 *.sqlite3
-.DS_Store
 
+# Конфигурация и секреты
+.env
+.env.*
+!.env.example  # Рекомендуется оставлять пример файла для коллег
 
+# Статика и медиа (типично для Django/Flask)
+/static/
+media/
+
+# Логи и временные файлы
+*.log
+*.tmp
+*.lock
+
+# IDE и редакторы
+.vscode/
+.idea/
+*.swp       # Специфично для Linux: временные файлы редактора Vim
+*.swo
+
+# Операционные системы
+.DS_Store    # Можно оставить (если проект смотрят коллеги с macOS)
+Thumbs.db    # Windows (если остались артефакты от переноса)

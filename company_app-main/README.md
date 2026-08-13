@@ -51,8 +51,30 @@ company_app/
 
 
 ```
-python -m venv venv
-venv\Scripts\activate
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
+python3 company_app-main/manage.py migrate
+
+
+```
+
+## Создание пользователя для входа в приложение
+```
+python3 company_app-main/manage.py  createsuperuser
+```
+
+# Сброс пароля суперпользователя (если нужно)
+```
+python3 company_app-main/manage.py shell
+from django.contrib.auth.models import User
+user = User.objects.get(username='admin')
+user.set_password('planificare')
+user.save()
+exit()
+```
+
+# Запуск локального сервера
+```
+python3 company_app-main/manage.py runserver
+```
