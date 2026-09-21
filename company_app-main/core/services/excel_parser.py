@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 import re
-
+import math
 
 class BudgetExcelParser:
     @staticmethod
@@ -36,21 +36,64 @@ class BudgetExcelParser:
 
             budget_lines = []
             processed_count = 0
-
+            start_processing = False
+            omit_line = {"nr", "d/r"}
             # 6. Парсим данные
             for index, row in df.iterrows():
-                if code_col is not None and BudgetExcelParser.is_valid_budget_row(row, code_col):
+                #print(str(row[code_col]).strip())
+                # print(row[index], index);
+                if pd.notna(row[0]):
+                    cod_bugetar = str(row[0]).strip().lower()
+                    if(cod_bugetar == '1') or start_processing:
+                        start_processing = True
+                        if BudgetExcelParser.is_number(cod_bugetar):
+                            print('Processing row:', index + 1, f'cod bugetar: {str(row[0]).strip()}, denumirea: {str(row[1]).strip()}')
+                            cod_bugetar = str(row[0]).strip()
+                            denumirea = str(row[1]) if str(row[1]).strip() else ""
+
+                            # Получаем сумму (можем искать по году в заголовках)
+                            comanda_de_stat = float(row[8]) if not math.isnan(float(row[8])) else 0
+                            venituri_colectate = float(row[9]) if not math.isnan(float(row[9])) else 0
+                            total_cheltuieli = float(row[10]) if not math.isnan(float(row[10]))  else 0
+                            print(comanda_de_stat, venituri_colectate, total_cheltuieli)
+                            print()
+                            budget_lines.append({
+                                'cod_bugetar': cod_bugetar,
+                                'denumirea': denumirea,
+                                'comanda_de_stat': comanda_de_stat,
+                                'venituri_colectate': venituri_colectate,
+                                'total_cheltuieli': total_cheltuieli,
+                                'anul': anul
+                            })
+                            processed_count += 1
+                            if float(cod_bugetar) == 311120.20:
+                                print(f"Parsing completed. Found {processed_count} valid budget lines for year {anul}.")
+                                return budget_lines
+                continue  # Пропускаем строки, которые не соответствуют структуре
+                #========================================= Old code =========================================
+                # if code_col is not None and BudgetExcelParser.is_valid_budget_row(row, code_col):
+                if code_col is not None:
                     cod_bugetar = str(row[code_col]).strip()
                     denumirea = str(row[name_col]) if name_col is not None and pd.notna(row[name_col]) else ""
 
                     # Получаем сумму (можем искать по году в заголовках)
-                    suma_alocata = BudgetExcelParser.extract_amount_by_year(row, df, anul, amount_col)
-
-                    if suma_alocata > 0 and denumirea and len(denumirea) > 3:
+                    comanda_de_stat = BudgetExcelParser.extract_amount_by_year(row, df, anul, 8)
+                    venituri_colectate = BudgetExcelParser.extract_amount_by_year(row, df, anul, 9)
+                    total_cheltuieli = BudgetExcelParser.extract_amount_by_year(row, df, anul, 10)
+                    # print('Test row')
+                    # print(comanda_de_stat)
+                    # suma_alocata = BudgetExcelParser.extract_amount_by_year(row, df, anul, amount_col)
+                    
+                    # print(row)
+                    # print('**'*10)
+                    if comanda_de_stat > 0 and denumirea and len(denumirea) > 3:
+                        print('Summa alocata:', comanda_de_stat)
                         budget_lines.append({
                             'cod_bugetar': cod_bugetar,
                             'denumirea': denumirea,
-                            'suma_alocata': suma_alocata,
+                            'comanda_de_stat': comanda_de_stat,
+                            'venituri_colectate': venituri_colectate,
+                            'total_cheltuieli': total_cheltuieli,
                             'anul': anul
                         })
                         processed_count += 1
@@ -61,6 +104,15 @@ class BudgetExcelParser:
         except Exception as e:
             print(f"Critical error in Excel parsing: {str(e)}")
             raise Exception(f"Eroare la parsarea fișierului Excel: {str(e)}")
+
+    @staticmethod
+    def is_number(s):
+        try:
+            float(s)
+        except ValueError:  # Failed
+            return False
+        else:  # Succeeded
+            return True
 
     @staticmethod
     def extract_year_from_filename(file_path):
@@ -140,6 +192,8 @@ class BudgetExcelParser:
         """Находит колонку с суммами для указанного года"""
         # Сначала ищем по заголовкам (если они есть)
         header_year_col = BudgetExcelParser.find_column_by_header(df, str(target_year))
+        # print('Header year column:')
+        # print(header_year_col)
         if header_year_col is not None:
             return header_year_col
 
@@ -156,7 +210,9 @@ class BudgetExcelParser:
             for row in range(1, sample_rows):  # Пропускаем возможный заголовок
                 try:
                     val = df.iloc[row, col]
+                    
                     if pd.notna(val):
+                        print('Colonita cu valoare:', val)
                         num_val = float(str(val).replace(' ', '').replace(',', '.'))
                         if num_val > 1000:
                             amount_count += 1
@@ -167,6 +223,7 @@ class BudgetExcelParser:
                 return col
 
         # По умолчанию - колонка 5
+        print('По умолчанию - колонка 5')
         return 5 if df.shape[1] > 5 else min(2, df.shape[1] - 1)
 
     @staticmethod
@@ -189,13 +246,15 @@ class BudgetExcelParser:
     def extract_amount_by_year(row, df, target_year, default_amount_col):
         """Извлекает сумму с учетом года"""
         # Если нашли колонку по заголовку года
-        year_col = BudgetExcelParser.find_column_by_header(df, str(target_year))
+        year_col = BudgetExcelParser.find_column_by_header(df, str(target_year))        
         if year_col is not None and year_col < len(row):
+            # print('find_column_by_header',year_col)
             amount = BudgetExcelParser.extract_amount(row, year_col)
             if amount > 0:
                 return amount
 
         # Используем колонку по умолчанию
+        # print('Используем колонку по умолчанию', default_amount_col, row)
         return BudgetExcelParser.extract_amount(row, default_amount_col)
 
     @staticmethod
@@ -210,6 +269,8 @@ class BudgetExcelParser:
     @staticmethod
     def extract_amount(row, amount_col):
         """Извлекает сумму из строки"""
+        print('Извлекает сумму из строки', amount_col, len(row))
+        # print(row)
         if amount_col is None or amount_col >= len(row) or pd.isna(row[amount_col]):
             return 0
 
@@ -217,7 +278,9 @@ class BudgetExcelParser:
             cell_value = row[amount_col]
             if isinstance(cell_value, str):
                 cell_value = cell_value.replace(' ', '').replace(',', '.')
+                print('Cell value before cleaning:', cell_value)
                 cell_value = ''.join(ch for ch in cell_value if ch.isdigit() or ch in '.-')
+                print('Cell value after cleaning:', cell_value)
 
             amount = float(cell_value)
             return amount if amount > 0 else 0

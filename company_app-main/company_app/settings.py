@@ -10,8 +10,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 SECRET_KEY = 'django-insecure-rkoa3u96iusf9%0kkvj8g1in2i)bqw9@epm8=6n^am@(_zgyqe'
-DEBUG = True
-ALLOWED_HOSTS = []
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'planificare.usarb']
 
 # Application definition
 INSTALLED_APPS = [
@@ -96,7 +96,7 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'  # Notice the leading slash!
 STATICFILES_DIRS = [
     BASE_DIR / "static",
     BASE_DIR / "core" / "static" / "core",

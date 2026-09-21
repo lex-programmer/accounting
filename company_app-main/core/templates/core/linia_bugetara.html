@@ -5,6 +5,7 @@
 
 {% block content %}
 <div class="container-fluid">
+    {% csrf_token %}
     <div class="row justify-content-center">
         <div class="col-12 col-lg-8">
             <!-- Заголовок -->
@@ -51,7 +52,7 @@
                                 <strong id="fileName"></strong>
                                 <div id="fileSize" class="text-muted small"></div>
                             </div>
-                            <button type="button" id="removeFile" class="btn-close ms-auto" aria-label="Remove"></button>
+                            <button type="button" id="removeFile" class="btn-close ms-auto" aria-label="Remove">Sterge</button>
                         </div>
                     </div>
 
@@ -121,29 +122,32 @@
                     <div class="search-results-info mb-3" style="display: none;"></div>
 
                     <!-- Таблица бюджетных линий -->
-                    <div class="table-responsive">
+                    <div class="">
                         <table class="table table-striped table-hover">
                             <thead class="table-light">
                                 <tr>
                                     <th width="15%">Cod</th>
-                                    <th width="40%">Denumirea indicatorilor</th>
-                                    <th width="15%">Suma alocată</th>
-                                    <th width="15%">Suma cheltuită</th>
-                                    <th width="15%">Suma rămasă</th>
+                                    <th width="15%">Denumirea indicatorilor</th>
+                                    <th width="15%">Comanda de Stat</th>
+                                    <th width="15%">Veniturile colectate</th>
+                                    <th width="15%">Venituri total</th>
+                                    <th width="15%">Anul</th>
                                 </tr>
                             </thead>
                             <tbody id="budgetTableBody">
                                 {% for line in budget_lines %}
                                 <tr>
-                                    <td><strong>{{ line.cod_bugetar }}</strong></td>
-                                    <td>{{ line.denumirea }}</td>
-                                    <td>{{ line.suma_alocata|floatformat:2 }} MDL</td>
-                                    <td>{{ line.suma_cheltuita|floatformat:2 }} MDL</td>
-                                    <td>
-                                        <span class="badge {% if line.suma_ramasa > 0 %}bg-success{% else %}bg-danger{% endif %}">
-                                            {{ line.suma_ramasa|floatformat:2 }} MDL
+                                    <td style="width:15%"><strong>{{ line.cod_bugetar }}</strong></td>
+                                    <td style="width:15%">{{ line.denumirea }}</td>
+                                    <td style="width:15%">{{ line.comanda_de_stat|floatformat:2 }} MDL</td>
+                                    <td style="width:15%">{{ line.venituri_colectate|floatformat:2 }} MDL</td>
+                                    <td style="width:15%">{{ line.total_cheltuieli|floatformat:2 }} MDL</td>
+                                    <td style="width:15%">{{ line.anul }}</td>
+                                    <!-- <td>
+                                        <span class="badge {% if line.total_cheltuieli > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ line.total_cheltuieli|floatformat:2 }} MDL
                                         </span>
-                                    </td>
+                                    </td> -->
                                 </tr>
                                 {% empty %}
                                 <tr>
@@ -391,12 +395,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Обработка загрузки
     uploadBtn.addEventListener('click', function() {
+        console.log(currentFile);
         if (!currentFile) return;
 
         const formData = new FormData();
         formData.append('excel_file', currentFile);
         formData.append('import_type', 'budget_lines');
-        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        // formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
         disableUploadButton();
         uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Se importă...';
@@ -433,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function searchBudgetLines() {
     const searchCode = document.getElementById('searchBudgetCode').value.trim();
     const searchYearInput = document.getElementById('searchBudgetYear').value.trim();
-    const searchYear = searchYearInput !== '' ? searchYearInput : '2025';
+    const searchYear = searchYearInput !== '' ? searchYearInput : '0';
     const resultsInfo = document.querySelector('.search-results-info');
     const tbody = document.getElementById('budgetTableBody');
 
@@ -487,13 +493,14 @@ function displaySearchResults(data) {
                 <tr class="${rowClass}" id="row-${line.id}">
                     <td><strong>${line.cod_bugetar}</strong></td>
                     <td>${line.denumirea}</td>
-                    <td>${line.suma_alocata.toFixed(2)} MDL</td>
-                    <td>${line.suma_cheltuita.toFixed(2)} MDL</td>
+                    <td>${line.comanda_de_stat.toFixed(2)} MDL</td>
+                    <td>${line.venituri_colectate.toFixed(2)} MDL</td>
                     <td>
-                        <span class="badge ${line.suma_ramasa > 0 ? 'bg-success' : 'bg-danger'}">
-                            ${line.suma_ramasa.toFixed(2)} MDL
+                        <span class="badge ${line.total_cheltuieli > 0 ? 'bg-success' : 'bg-danger'}">
+                            ${line.total_cheltuieli.toFixed(2)} MDL
                         </span>
                     </td>
+                    <td>${line.anul}</td>
                 </tr>
             `;
             tbody.innerHTML += row;

@@ -46,9 +46,11 @@ class EcoCode(models.Model):
 
 
 class BudgetLine(models.Model):
-    cod_bugetar = models.CharField(max_length=50, unique=True)
-    denumirea = models.CharField(max_length=255)
-    suma_alocata = models.DecimalField(max_digits=18, decimal_places=2)
+    cod_bugetar = models.CharField(max_length=50)
+    denumirea = models.CharField(max_length=700)
+    comanda_de_stat = models.DecimalField(max_digits=18, decimal_places=2)
+    venituri_colectate = models.DecimalField(max_digits=18, decimal_places=2)
+    total_cheltuieli = models.DecimalField(max_digits=18, decimal_places=2)
     anul = models.IntegerField(default=2025)
     file_name = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -65,12 +67,12 @@ class BudgetLine(models.Model):
 
     @property
     def suma_ramasa(self):
-        return self.suma_alocata - self.suma_cheltuita
+        return self.comanda_de_stat - self.suma_cheltuita
 
     @property
     def procent_cheltuit(self):
-        if self.suma_alocata > 0:
-            return round((self.suma_cheltuita / self.suma_alocata) * 100, 2)
+        if self.comanda_de_stat > 0:
+            return round((self.suma_cheltuita / self.comanda_de_stat) * 100, 2)
         return 0
 
 

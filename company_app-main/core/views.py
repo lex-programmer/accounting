@@ -665,7 +665,7 @@ def handle_budget_lines_import(excel_file):
         from .services.excel_parser import BudgetExcelParser
         parser = BudgetExcelParser()
         budget_data = parser.parse_budget_file(tmp_path, target_year)
-
+        print(len(budget_data))
         print(f"Parsed {len(budget_data)} budget lines for year {target_year}")
 
         # Сохраняем данные
@@ -674,19 +674,30 @@ def handle_budget_lines_import(excel_file):
 
         for item in budget_data:
             try:
-                obj, created = BudgetLine.objects.update_or_create(
+                BudgetLine.objects.create(
                     cod_bugetar=item['cod_bugetar'],
                     anul=item['anul'],
-                    defaults={
-                        'denumirea': item['denumirea'],
-                        'suma_alocata': item['suma_alocata'],
-                        'file_name': excel_file.name
-                    }
+                    denumirea=item['denumirea'],
+                    comanda_de_stat=item['comanda_de_stat'],
+                    venituri_colectate=item['venituri_colectate'],
+                    total_cheltuieli=item['total_cheltuieli'],
+                    file_name=excel_file.name
                 )
-                if created:
-                    created_count += 1
-                else:
-                    updated_count += 1
+                # obj, created = BudgetLine.objects.create(
+                #                     cod_bugetar=item['cod_bugetar'],
+                #                     anul=item['anul'],
+                #                     denumirea=item['denumirea'],
+                #                     defaults={
+                #                         'comanda_de_stat': item['comanda_de_stat'],
+                #                         'venituri_colectate': item['venituri_colectate'],
+                #                         'total_cheltuieli': item['total_cheltuieli'],
+                #                         'file_name': excel_file.name
+                #                     }
+                # )
+                # if created:
+                #     created_count += 1
+                # else:
+                #     updated_count += 1
             except Exception as e:
                 print(f"Error saving budget line {item['cod_bugetar']}: {e}")
 
@@ -713,16 +724,18 @@ def handle_budget_lines_import(excel_file):
 def search_budget_lines(request):
     """Поиск бюджетных линий по коду"""
     search_code = request.GET.get('cod', '').strip()
-    year = request.GET.get('anul', 2025)
+    year = request.GET.get('anul', 0)
 
     try:
-        budget_lines = BudgetLine.objects.filter(anul=year)
-
-        if search_code:
+        budget_lines = []
+        if search_code and int(year) > 0:
+            budget_lines = BudgetLine.objects.filter(anul=year)
             budget_lines = budget_lines.filter(cod_bugetar__icontains=search_code)
+        elif search_code:
+            budget_lines = BudgetLine.objects.filter(cod_bugetar__icontains=search_code)
 
         # Ограничиваем количество результатов
-        budget_lines = budget_lines.order_by('cod_bugetar')[:100]
+        #budget_lines = budget_lines.order_by('cod_bugetar')[:100]
 
         data = []
         for line in budget_lines:
@@ -730,10 +743,11 @@ def search_budget_lines(request):
                 'id': line.id,
                 'cod_bugetar': line.cod_bugetar,
                 'denumirea': line.denumirea,
-                'suma_alocata': float(line.suma_alocata),
-                'suma_cheltuita': float(line.suma_cheltuita),
-                'suma_ramasa': float(line.suma_ramasa),
+                'comanda_de_stat': float(line.comanda_de_stat),
+                'venituri_colectate': float(line.venituri_colectate),
+                'total_cheltuieli': float(line.total_cheltuieli),
                 'procent_cheltuit': line.procent_cheltuit,
+                'anul': line.anul
             })
 
         return JsonResponse({
