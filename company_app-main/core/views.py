@@ -591,7 +591,8 @@ def linia_bugetara_view(request):
     form = ExcelUploadForm()
 
     # Получаем существующие бюджетные линии для отображения
-    budget_lines = BudgetLine.objects.filter(anul=2025).order_by('cod_bugetar')
+    current_year = datetime.now().year
+    budget_lines = BudgetLine.objects.filter(anul=current_year).order_by('cod_bugetar')
 
     return render(request, 'core/linia_bugetara.html', {
         'form': form,

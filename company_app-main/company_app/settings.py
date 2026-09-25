@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 SECRET_KEY = 'django-insecure-rkoa3u96iusf9%0kkvj8g1in2i)bqw9@epm8=6n^am@(_zgyqe'
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'planificare.usarb']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'planificare.usarb', '192.168.254.87']
 
 # Application definition
 INSTALLED_APPS = [
