@@ -20,6 +20,7 @@ from .forms import ExcelUploadForm
 from django.views.decorators.csrf import csrf_exempt
 from .serializers import BudgetLineSerializer
 from .services.excel_parser import BudgetExcelParser
+from django.views.decorators.cache import never_cache
 
 # --- ДОБАВЛЕННЫЕ ИМПОРТЫ ДЛЯ PDF (ReportLab) ---
 from reportlab.lib import colors
@@ -27,7 +28,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 # ------------------------------------------------
 
-
+@never_cache
 @login_required
 def home(request):
     return render(request, "core/home.html")
@@ -44,7 +45,7 @@ class SupplierForm(forms.ModelForm):
             "cont_bancar_iban", "contract_baza"
         ]
 
-
+@never_cache
 @login_required
 def supplier_list(request):
     suppliers = AgentiComerciali.objects.all()
@@ -101,7 +102,7 @@ class ContractForm(forms.ModelForm):
             "data_indeplinirii_obligatiilor": forms.DateInput(attrs={"type": "date"}),
         }
 
-
+@never_cache
 @login_required(login_url='login')
 def contract_list(request):
     contracts = Contracte.objects.select_related("agent").all()
@@ -198,7 +199,7 @@ class FacturaForm(forms.ModelForm):
             "data_facturii": forms.DateInput(attrs={"type": "date"}),
         }
 
-
+@never_cache
 @login_required(login_url='login')
 def factura_list(request):
     contract_id = request.GET.get("contract")
@@ -405,7 +406,7 @@ class PlataForm(forms.ModelForm):
         model = Plata
         fields = ["factura", "data_platii", "suma_platita", "metoda", "numar_document"]
 
-
+@never_cache
 @login_required(login_url='login')
 def plata_list(request):
     plati = Plata.objects.select_related("factura").all()
@@ -583,7 +584,7 @@ def cont_bancar_delete(request, pk):
     cont.delete()
     return redirect("supplier_edit", pk=agent_id)
 
-
+@never_cache
 @login_required
 def linia_bugetara_view(request):
     """Страница Linia Bugetara с drag&drop для Excel"""
@@ -597,7 +598,7 @@ def linia_bugetara_view(request):
         'budget_lines': budget_lines
     })
 
-
+@never_cache
 @csrf_exempt
 @login_required
 def handle_excel_upload(request):

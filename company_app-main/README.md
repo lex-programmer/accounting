@@ -42,7 +42,7 @@ company_app/
 ├── venv/                       # Виртуальное окружение
 │
 ├── manage.py                   # Точка входа Django-проекта
-├── .gitignore                
+├── .gitignore              
 └── README.md
 ```
 
