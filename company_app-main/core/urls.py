@@ -59,6 +59,11 @@ urlpatterns = [
     # AJAX-автозаполнение (Autocomplete)
     path("ajax/eco-autocomplete/", views.eco_autocomplete, name="eco_autocomplete"),
     path('ajax/coduri-buget-autocomplete/', views.budget_line_autocomplete, name='budget_line_autocomplete'),
+    path(
+        'ajax/coduri-bugetare/',
+        views.cod_bugetar_search,
+        name='cod_bugetar_search',
+    ),
     # <-- Новый рабочий путь
 
 ]

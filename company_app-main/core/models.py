@@ -256,7 +256,87 @@ class ContBancar(models.Model):
 
 
 
+class CodBugetar(models.Model):
+    cod_bugetar = models.CharField(max_length=50)
+    denumirea = models.TextField()
 
+    class Meta:
+        db_table = 'CoduriBugetare'
+        verbose_name = 'Cod bugetar'
+        verbose_name_plural = 'Coduri bugetare'
+
+    def __str__(self):
+        return f'{self.cod_bugetar} - {self.denumirea}'
+
+
+class LinieBugetara(models.Model):
+    an_academic = models.DateField()
+    active = models.BooleanField(default=True)
+
+    comanda_de_stat = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        default=0
+    )
+
+    venituri_colectate = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        default=0
+    )
+
+    total_cheltuieli = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        default=0
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'LiniiBugetare'
+
+    def __str__(self):
+        return str(self.an_academic)
+
+
+class LiniaBugetaraCalc(models.Model):
+    cod_bugetar = models.ForeignKey(
+        CodBugetar,
+        on_delete=models.PROTECT,
+        related_name='calcule'
+    )
+
+    linia_bugetara = models.ForeignKey(
+        LinieBugetara,
+        on_delete=models.CASCADE,
+        related_name='calcule'
+    )
+
+    comanda_de_stat = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        default=0
+    )
+
+    venituri_colectate = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        default=0
+    )
+
+    total_cheltuieli = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        default=0
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'LiniaBugetara_Calc'
 
 
 

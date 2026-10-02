@@ -1,6 +1,7 @@
 from django import forms
 from django.db.models import Sum
 from .models import AgentiComerciali, Contracte, Factura, FacturaItem, Plata, ContBancar, EcoCode, BudgetLine
+from .models import CodBugetar, LinieBugetara, LiniaBugetaraCalc
 
 
 class AgentiComercialiForm(forms.ModelForm):
@@ -107,6 +108,7 @@ class FacturaForm(forms.ModelForm):
         }
 
     def clean(self):
+        suma = 0
         cleaned_data = super().clean()
         contract = cleaned_data.get("contract")
         eco = cleaned_data.get("eco")
@@ -180,3 +182,197 @@ class ContBancarForm(forms.ModelForm):
 
 class ExcelUploadForm(forms.Form):
     file = forms.FileField(label="Importă fișier Excel")
+    
+
+class LinieBugetaraForm(forms.ModelForm):
+
+    class Meta:
+        
+
+        model = LinieBugetara
+
+        fields = [
+            'an_academic',
+            'active',
+            'comanda_de_stat',
+            'venituri_colectate',
+            'total_cheltuieli',
+        ]
+
+        widgets = {
+            'an_academic': forms.DateInput(
+                attrs={
+                    'class': 'form-control',
+                    'type': 'date'
+                }
+            ),
+
+            'active': forms.CheckboxInput(
+                attrs={
+                    'class': 'form-check-input'
+                }
+            ),
+
+            'comanda_de_stat': forms.NumberInput(
+                attrs={
+                    'class': 'form-control',
+                    'step': '0.01'
+                }
+            ),
+
+            'venituri_colectate': forms.NumberInput(
+                attrs={
+                    'class': 'form-control',
+                    'step': '0.01'
+                }
+            ),
+
+            'total_cheltuieli': forms.NumberInput(
+                attrs={
+                    'class': 'form-control',
+                    'step': '0.01'
+                }
+            ),
+        }
+
+        labels = {
+            'an_academic': 'An academic',
+            'active': 'Activ',
+            'comanda_de_stat': 'Comanda de stat',
+            'venituri_colectate': 'Venituri colectate',
+            'total_cheltuieli': 'Total cheltuieli',
+        }
+        model = LinieBugetara
+
+        fields = [
+            'an_academic',
+            'active',
+            'comanda_de_stat',
+            'venituri_colectate',
+            'total_cheltuieli',
+        ]
+
+        widgets = {
+            'an_academic': forms.DateInput(
+                attrs={
+                    'class': 'form-control',
+                    'type': 'date'
+                }
+            ),
+
+            'active': forms.CheckboxInput(
+                attrs={
+                    'class': 'form-check-input'
+                }
+            ),
+
+            'comanda_de_stat': forms.NumberInput(
+                attrs={
+                    'class': 'form-control',
+                    'step': '0.01'
+                }
+            ),
+
+            'venituri_colectate': forms.NumberInput(
+                attrs={
+                    'class': 'form-control',
+                    'step': '0.01'
+                }
+            ),
+
+            'total_cheltuieli': forms.NumberInput(
+                attrs={
+                    'class': 'form-control',
+                    'step': '0.01'
+                }
+            ),
+        }
+
+        labels = {
+            'an_academic': 'An academic',
+            'active': 'Activ',
+            'comanda_de_stat': 'Comanda de stat',
+            'venituri_colectate': 'Venituri colectate',
+            'total_cheltuieli': 'Total cheltuieli',
+        }
+        
+class CodBugetarForm(forms.ModelForm):
+
+    class Meta:
+        model = CodBugetar
+
+        fields = [
+            'cod_bugetar',
+            'denumirea',
+        ]
+
+        widgets = {
+            'cod_bugetar': forms.TextInput(
+                attrs={
+                    'class': 'form-control',
+                    'placeholder': 'Cod bugetar'
+                }
+            ),
+
+            'denumirea': forms.Textarea(
+                attrs={
+                    'class': 'form-control',
+                    'rows': 3,
+                    'placeholder': 'Denumirea'
+                }
+            ),
+        }
+
+        labels = {
+            'cod_bugetar': 'Cod bugetar',
+            'denumirea': 'Denumirea',
+        }
+        
+class LiniaBugetaraCalcForm(forms.ModelForm):
+
+    class Meta:
+        model = LiniaBugetaraCalc
+
+        fields = [
+            'linia_bugetara',
+            'cod_bugetar',
+            'comanda_de_stat',
+            'venituri_colectate',
+            'total_cheltuieli',
+        ]
+
+        widgets = {
+            'cod_bugetar': forms.Select(
+                attrs={
+                    'id': 'id_calc_cod_bugetar',
+                }
+            ),
+        }
+
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['linia_bugetara'].queryset = (
+            LinieBugetara.objects.all()
+            .order_by('-active', '-an_academic')
+        )
+
+        self.fields['cod_bugetar'].queryset = CodBugetar.objects.none()
+
+        if self.instance and self.instance.pk:
+            self.fields['cod_bugetar'].queryset = (
+                CodBugetar.objects.filter(
+                    pk=self.instance.cod_bugetar_id
+                )
+            )
+
+        if 'cod_bugetar' in self.data:
+            try:
+                cod_id = int(self.data.get('cod_bugetar'))
+            except (TypeError, ValueError):
+                pass
+            else:
+                self.fields['cod_bugetar'].queryset = (
+                    CodBugetar.objects.filter(pk=cod_id)
+                )

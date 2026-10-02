@@ -26,6 +26,20 @@ from django.views.decorators.cache import never_cache
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from .models import (
+    LinieBugetara,
+    CodBugetar,
+    LiniaBugetaraCalc,
+)
+
+from .forms import (
+    LinieBugetaraForm,
+    CodBugetarForm,
+    LiniaBugetaraCalcForm,
+)
+from django.urls import reverse
+
+from django.views.decorators.http import require_GET
 # ------------------------------------------------
 
 @never_cache
@@ -588,16 +602,353 @@ def cont_bancar_delete(request, pk):
 @login_required
 def linia_bugetara_view(request):
     """Страница Linia Bugetara с drag&drop для Excel"""
-    form = ExcelUploadForm()
+    # form = ExcelUploadForm()
 
-    # Получаем существующие бюджетные линии для отображения
-    current_year = datetime.now().year
-    budget_lines = BudgetLine.objects.filter(anul=current_year).order_by('cod_bugetar')
+    # # Получаем существующие бюджетные линии для отображения
+    # current_year = datetime.now().year
+    # budget_lines = BudgetLine.objects.filter(anul=current_year).order_by('cod_bugetar')
 
-    return render(request, 'core/linia_bugetara.html', {
-        'form': form,
-        'budget_lines': budget_lines
+    # return render(request, 'core/linia_bugetara.html', {
+    #     'form': form,
+    #     'budget_lines': budget_lines
+    # })
+    
+    active_linie = (
+    LinieBugetara.objects
+    .filter(active=True)
+    .order_by('-an_academic')
+    .first()
+    )
+
+    filter_linie_id = request.GET.get('filter_linie')
+
+    if filter_linie_id:
+        selected_linie_id = filter_linie_id
+
+    elif active_linie:
+        selected_linie_id = active_linie.id
+
+    else:
+        selected_linie_id = None
+    active_tab = request.GET.get('tab', 'calcul')
+
+    edit_id = request.GET.get('edit')
+
+    linie_editata = None
+
+    # ---------------------------------
+    # Режим редактирования
+    # ---------------------------------
+
+    if edit_id:
+
+        linie_editata = get_object_or_404(
+            LinieBugetara,
+            pk=edit_id
+        )
+
+        linie_form = LinieBugetaraForm(
+            instance=linie_editata
+        )
+
+    else:
+
+        linie_form = LinieBugetaraForm()
+
+    cod_editat = None
+    cod_form = CodBugetarForm()
+
+    edit_cod_id = request.GET.get('edit_cod')
+    
+    
+    calcul_editat = None
+    edit_calc_id = request.GET.get('edit_calc')
+    if edit_calc_id:
+        calcul_editat = get_object_or_404(
+            LiniaBugetaraCalc,
+            pk=edit_calc_id
+        )
+
+        calcul_form = LiniaBugetaraCalcForm(
+            instance=calcul_editat
+        )
+
+    else:
+
+        initial = {}
+
+        if active_linie:
+            initial['linia_bugetara'] = active_linie
+
+        calcul_form = LiniaBugetaraCalcForm(
+            initial=initial
+        )
+    
+    if edit_cod_id:
+
+        cod_editat = get_object_or_404(
+            CodBugetar,
+            pk=edit_cod_id
+        )
+
+        cod_form = CodBugetarForm(
+            instance=cod_editat
+        )
+    # ---------------------------------
+    # POST
+    # ---------------------------------
+
+    if request.method == 'POST':
+
+        action = request.POST.get('action')
+
+
+        # Создание
+        if action == 'add_linie':
+
+            linie_form = LinieBugetaraForm(
+                request.POST
+            )
+
+            if linie_form.is_valid():
+
+                linie_form.save()
+
+                return redirect(
+                    reverse('linia_bugetara') + '?tab=linii'
+                )
+
+
+        # Редактирование
+        elif action == 'update_linie':
+
+            linie_id = request.POST.get('linie_id')
+
+            linie_editata = get_object_or_404(
+                LinieBugetara,
+                pk=linie_id
+            )
+
+            linie_form = LinieBugetaraForm(
+                request.POST,
+                instance=linie_editata
+            )
+
+            if linie_form.is_valid():
+
+                linie_form.save()
+
+                return redirect(
+                    reverse('linia_bugetara') + '?tab=linii'
+                )
+                # ---------------------------------
+        # Создание бюджетного кода
+        # ---------------------------------
+
+        elif action == 'add_cod':
+
+            cod_form = CodBugetarForm(
+                request.POST
+            )
+
+            if cod_form.is_valid():
+
+                cod_form.save()
+
+                return redirect(
+                    reverse('linia_bugetara') + '?tab=coduri'
+                )
+
+
+        # ---------------------------------
+        # Редактирование бюджетного кода
+        # ---------------------------------
+
+        elif action == 'update_cod':
+
+            cod_id = request.POST.get('cod_id')
+
+            cod_editat = get_object_or_404(
+                CodBugetar,
+                pk=cod_id
+            )
+
+            cod_form = CodBugetarForm(
+                request.POST,
+                instance=cod_editat
+            )
+
+            if cod_form.is_valid():
+
+                cod_form.save()
+
+                return redirect(
+                    reverse('linia_bugetara') + '?tab=coduri'
+                )
+        elif action == 'add_calcul':
+            calcul_form = LiniaBugetaraCalcForm(
+                request.POST
+            )
+
+            if calcul_form.is_valid():
+
+                calcul = calcul_form.save(
+                    commit=False
+                )
+
+                calcul.total_cheltuieli = (
+                    calcul.comanda_de_stat +
+                    calcul.venituri_colectate
+                )
+                
+
+                calcul.save()
+        elif action == 'update_calcul':
+            calcul_id = request.POST.get(
+                'calcul_id'
+            )
+
+            calcul_editat = get_object_or_404(
+                LiniaBugetaraCalc,
+                pk=calcul_id
+            )
+
+            calcul_form = LiniaBugetaraCalcForm(
+                request.POST,
+                instance=calcul_editat
+            )
+
+            if calcul_form.is_valid():
+
+                calcul = calcul_form.save(
+                    commit=False
+                )
+
+                calcul.total_cheltuieli = (
+                    calcul.comanda_de_stat +
+                    calcul.venituri_colectate
+                )
+
+                calcul.save()
+
+                return redirect(
+                    reverse('linia_bugetara')
+                    + '?tab=calcul'
+                    + f'&filter_linie={calcul.linia_bugetara_id}'
+                )
+        
+        
+        return redirect(
+            reverse('linia_bugetara')
+            + '?tab=calcul'
+            + f'&filter_linie={calcul.linia_bugetara_id}'
+        )
+
+    # ---------------------------------
+    # Список
+    # ---------------------------------
+
+    linii_bugetare = LinieBugetara.objects.all().order_by(
+        '-an_academic'
+    )
+    
+    coduri_bugetare = CodBugetar.objects.all().order_by(
+        'cod_bugetar'
+    )
+
+    if selected_linie_id:
+
+        calcule = (
+            LiniaBugetaraCalc.objects
+            .filter(
+                linia_bugetara_id=selected_linie_id
+            )
+            .select_related(
+                'cod_bugetar',
+                'linia_bugetara'
+            )
+            .order_by('cod_bugetar__cod_bugetar')
+        )
+
+    else:
+
+        calcule = LiniaBugetaraCalc.objects.none()
+    linii_select = (
+        LinieBugetara.objects
+        .all()
+        .order_by('-an_academic')
+    )
+
+    return render(
+        request,
+        'core/linia_bugetara_2.html',
+        {
+            'linie_form': linie_form,
+            'linii_bugetare': linii_bugetare,
+            'linie_editata': linie_editata,
+            
+            'cod_form': cod_form,
+            'coduri_bugetare': coduri_bugetare,
+            'cod_editat': cod_editat,
+            
+            'calcul_form': calcul_form,
+            'calcul_editat': calcul_editat,
+            'calcule': calcule,
+            'linii_select': linii_select,
+            'selected_linie_id': selected_linie_id,
+        
+        
+            'active_tab': active_tab,
+        }
+    )
+
+@login_required
+@require_GET
+def cod_bugetar_search(request):
+    query = request.GET.get('q', '').strip()
+
+    coduri = CodBugetar.objects.all()
+
+    # Каждый фрагмент запроса должен встретиться либо в коде,
+    # либо в названии. Поэтому работают запросы вроде "222 energie".
+    for term in query.split():
+        coduri = coduri.filter(
+            Q(cod_bugetar__icontains=term)
+            | Q(denumirea__icontains=term)
+        )
+
+    coduri = coduri.order_by('cod_bugetar')[:30]
+
+    return JsonResponse({
+        'results': [
+            {
+                'id': cod.id,
+                'text': f'{cod.cod_bugetar} — {cod.denumirea}',
+            }
+            for cod in coduri
+        ]
     })
+
+def linie_bugetara_create(request):
+
+    if request.method == 'POST':
+        form = LinieBugetaraForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+            return redirect('linie_bugetara_list')
+
+    else:
+        form = LinieBugetaraForm()
+
+    return render(
+        request,
+        'linie_bugetara/form.html',
+        {
+            'form': form,
+            'title': 'Linie bugetară nouă'
+        }
+    )
 
 @never_cache
 @csrf_exempt
