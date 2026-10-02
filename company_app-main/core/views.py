@@ -803,6 +803,13 @@ def linia_bugetara_view(request):
                 
 
                 calcul.save()
+
+                return redirect(
+                    reverse('linia_bugetara')
+                    + '?tab=calcul'
+                    + f'&filter_linie={calcul.linia_bugetara_id}'
+                )
+
         elif action == 'update_calcul':
             calcul_id = request.POST.get(
                 'calcul_id'
@@ -836,13 +843,23 @@ def linia_bugetara_view(request):
                     + '?tab=calcul'
                     + f'&filter_linie={calcul.linia_bugetara_id}'
                 )
-        
-        
-        return redirect(
-            reverse('linia_bugetara')
-            + '?tab=calcul'
-            + f'&filter_linie={calcul.linia_bugetara_id}'
-        )
+
+        elif action == 'delete_calcul':
+            calcul_id = request.POST.get('calcul_id')
+
+            calcul = get_object_or_404(
+                LiniaBugetaraCalc,
+                pk=calcul_id
+            )
+
+            linie_id = calcul.linia_bugetara_id
+            calcul.delete()
+
+            return redirect(
+                reverse('linia_bugetara')
+                + '?tab=calcul'
+                + f'&filter_linie={linie_id}'
+            )
 
     # ---------------------------------
     # Список
