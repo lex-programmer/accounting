@@ -4,12 +4,23 @@
 {% block content %}
 <div style="text-align:center; margin-top:100px;">
   <h2>Autentificare</h2>
-  <form method="post" action="{% url 'login' %}">
-    {% csrf_token %}
-    {{ form.non_field_errors }}
-    <p><label for="id_username">Utilizator</label><br>{{ form.username }}</p>
-    <p><label for="id_password">Parola</label><br>{{ form.password }}</p>
-    <button type="submit" class="btn btn-primary">Intră</button>
+  <form method="post" action="{% url 'login' %}" class="container-fluid">
+    <div class="row">
+      <div class="col-md-4 offset-md-4">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <p><label for="id_username">Utilizator</label><br>{{ form.username }}</p>
+        <p><label for="id_password">Parola</label><br>{{ form.password }}</p>
+        <button type="submit" class="btn btn-primary">Intră</button>
+      </div>
+    </div>
   </form>
 </div>
+
+<script>
+  $(document).ready(function() {
+    // Check if there are any non-field errors
+    $('input').addClass('form-control');
+  });
+</script>
 {% endblock %}

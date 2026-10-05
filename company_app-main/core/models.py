@@ -302,6 +302,30 @@ class LinieBugetara(models.Model):
 
 
 class LiniaBugetaraCalc(models.Model):
+    class Sursa(models.TextChoices):
+        CAMIN = 'camin', 'Cămin'
+        LICENTA = 'licenta', 'Licență'
+        MASTER = 'master', 'Master'
+        DOCTORAT = 'doctorat', 'Doctorat'
+        COLEGIU = 'colegiu', 'Colegiu'
+        COLEGIU_CAMIN = 'colegiu_camin', 'Colegiu cămin'
+        CURSURI = 'cursuri', 'Cursuri'
+        CANTINA = 'cantina', 'Cantină'
+        ARENDA = 'arenda', 'Arendă'
+        CATEDRA_MILITARA = 'catedra_militara', 'Catedră militară'
+        ALTE = 'alte', 'Alte'
+        DOBINDA_DIN_DEPOZIT = 'dobinda_din_depozit', 'Dobândă din depozit'
+        FINANTARE_COMPLEM = 'finantare_complem', 'Finanțare complementară'
+        NORTEK = 'nortek', 'Nortek'
+        AUTOGUVERNANTI = 'autoguvernanti', 'Autoguvernanți'
+        STIINTA_MEC = 'stiinta_mec', 'Știință MEC'
+        COLEGIU_EXTERN = 'colegiu_extern', 'Colegiu extern'
+        COLEGIU_EXTERN_CAMIN = 'colegiu_extern_camin', 'Colegiu extern cămin'
+        SPONSORIZARE = 'sponsorizare', 'Sponsorizare'
+        STIINTA_ANCD = 'stiinta_ancd', 'Știință ANCD'
+        BANCA_MONDIALA = 'banca_mondiala', 'Banca Mondială'
+        PROICTE_EXTERNE = 'proicte_externe', 'Proiecte externe'
+
     cod_bugetar = models.ForeignKey(
         CodBugetar,
         on_delete=models.PROTECT,
@@ -312,6 +336,11 @@ class LiniaBugetaraCalc(models.Model):
         LinieBugetara,
         on_delete=models.CASCADE,
         related_name='calcule'
+    )
+
+    sursa = models.CharField(
+        max_length=100,
+        choices=Sursa.choices,
     )
 
     comanda_de_stat = models.DecimalField(
@@ -337,6 +366,4 @@ class LiniaBugetaraCalc(models.Model):
 
     class Meta:
         db_table = 'LiniaBugetara_Calc'
-
-
 

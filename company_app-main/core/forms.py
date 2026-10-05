@@ -336,6 +336,7 @@ class LiniaBugetaraCalcForm(forms.ModelForm):
         fields = [
             'linia_bugetara',
             'cod_bugetar',
+            'sursa',
             'comanda_de_stat',
             'venituri_colectate',
             'total_cheltuieli',
@@ -345,6 +346,11 @@ class LiniaBugetaraCalcForm(forms.ModelForm):
             'cod_bugetar': forms.Select(
                 attrs={
                     'id': 'id_calc_cod_bugetar',
+                }
+            ),
+            'sursa': forms.Select(
+                attrs={
+                    'id': 'id_calc_sursa',
                 }
             ),
         }

@@ -946,6 +946,24 @@ def cod_bugetar_search(request):
         ]
     })
 
+
+@login_required
+@require_GET
+def sursa_search(request):
+    query_terms = request.GET.get('q', '').strip().casefold().split()
+    results = []
+
+    for value, label in LiniaBugetaraCalc.Sursa.choices:
+        searchable_text = f'{value} {label}'.casefold()
+
+        if all(term in searchable_text for term in query_terms):
+            results.append({
+                'id': value,
+                'text': label,
+            })
+
+    return JsonResponse({'results': results})
+
 def linie_bugetara_create(request):
 
     if request.method == 'POST':

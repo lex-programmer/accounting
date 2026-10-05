@@ -655,3 +655,10 @@ body.dark-theme .main-content::-webkit-scrollbar-thumb:hover {
         transform: scale(1);
     }
 }
+
+button.list-group-item.list-group-item-action.border-0.text-start:hover {
+    cursor: pointer;
+    --bs-bg-opacity: 1;
+    background-color: rgba(var(--bs-primary-rgb), var(--bs-bg-opacity)) !important;
+    color: #fff !important;
+}

@@ -64,6 +64,11 @@ urlpatterns = [
         views.cod_bugetar_search,
         name='cod_bugetar_search',
     ),
+    path(
+        'ajax/surse/',
+        views.sursa_search,
+        name='sursa_search',
+    ),
     # <-- Новый рабочий путь
 
 ]

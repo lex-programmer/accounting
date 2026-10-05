@@ -61,7 +61,8 @@
                     </div>
 
                     <div class="card-body p-4">
-                        <form method="post" id="calcul-form" data-cod-search-url="{% url 'cod_bugetar_search' %}">
+                        <form method="post" id="calcul-form" data-cod-search-url="{% url 'cod_bugetar_search' %}"
+                            data-sursa-search-url="{% url 'sursa_search' %}">
                             {% csrf_token %}
 
                             {% if calcul_editat %}
@@ -72,7 +73,7 @@
                             {% endif %}
 
                             <div class="row g-3">
-                                <div class="col-md-2">
+                                <div class="col-lg-3">
                                     <label class="form-label">Linie bugetară</label>
                                     {{ calcul_form.linia_bugetara }}
 
@@ -81,7 +82,7 @@
                                     {% endfor %}
                                 </div>
 
-                                <div class="col-md-4">
+                                <div class="col-lg-5">
                                     <label class="form-label">Cod bugetar</label>
                                     {{ calcul_form.cod_bugetar }}
 
@@ -90,7 +91,18 @@
                                     {% endfor %}
                                 </div>
 
-                                <div class="col-md-2">
+                                <div class="col-lg-4">
+                                    <label class="form-label">Sursa</label>
+                                    {{ calcul_form.sursa }}
+
+                                    {% for error in calcul_form.sursa.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mt-1">
+                                <div class="col-md-4">
                                     <label class="form-label">Comanda de stat</label>
                                     {{ calcul_form.comanda_de_stat }}
 
@@ -99,7 +111,7 @@
                                     {% endfor %}
                                 </div>
 
-                                <div class="col-md-2">
+                                <div class="col-md-4">
                                     <label class="form-label">Venituri colectate</label>
                                     {{ calcul_form.venituri_colectate }}
 
@@ -108,7 +120,7 @@
                                     {% endfor %}
                                 </div>
 
-                                <div class="col-md-2">
+                                <div class="col-md-4">
                                     <label class="form-label">Total cheltuieli</label>
                                     {{ calcul_form.total_cheltuieli }}
 
@@ -188,6 +200,7 @@
                                     <tr>
                                         <th style="width: 130px;">Cod</th>
                                         <th>Denumirea</th>
+                                        <th style="width: 180px;">Sursa</th>
                                         <th class="text-end" style="width: 160px;">Comanda de stat</th>
                                         <th class="text-end" style="width: 170px;">Venituri colectate</th>
                                         <th class="text-end" style="width: 160px;">Total cheltuieli</th>
@@ -202,6 +215,7 @@
                                             <strong>{{ calcul.cod_bugetar.cod_bugetar }}</strong>
                                         </td>
                                         <td>{{ calcul.cod_bugetar.denumirea }}</td>
+                                        <td>{{ calcul.get_sursa_display|default:"—" }}</td>
                                         <td class="text-end">{{ calcul.comanda_de_stat }}</td>
                                         <td class="text-end">{{ calcul.venituri_colectate }}</td>
                                         <td class="text-end">
@@ -226,7 +240,7 @@
                                     </tr>
                                     {% empty %}
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted py-4">
+                                        <td colspan="7" class="text-center text-muted py-4">
                                             Nu există calcule pentru această linie bugetară.
                                         </td>
                                     </tr>
@@ -681,7 +695,7 @@
 </div>
 
 <script>
-    function calculateJS(){
+    function calculateJS() {
         let comanda_de_stat = parseFloat(document.getElementById('id_comanda_de_stat').value) || 0;
         let venituri_colectate = parseFloat(document.getElementById('id_venituri_colectate').value) || 0;
         let total_cheltuieli = comanda_de_stat + venituri_colectate;
@@ -695,6 +709,9 @@
         $("#id_venituri_colectate").change(function () {
             calculateJS();
         });
+
+        $('input[name="an_academic"]').attr('autocomplete', 'off');
+        $('input[name="cod_bugetar"]').attr('autocomplete', 'off');
     });
     document.addEventListener('DOMContentLoaded', function () {
 
@@ -889,6 +906,177 @@
                         searchInput.classList.add('is-invalid');
                         showMessage(
                             'Selectați un cod din lista de rezultate.',
+                            'px-3 py-2 text-danger'
+                        );
+                        searchInput.focus();
+                    }
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!wrapper.contains(event.target)) {
+                        resultsBox.classList.add('d-none');
+                    }
+                });
+            }
+
+            const sursaSelect = calculForm.querySelector(
+                '#id_calc_sursa, select[name="sursa"]'
+            );
+
+            if (sursaSelect) {
+                const searchUrl = calculForm.dataset.sursaSearchUrl;
+                const wrapper = document.createElement('div');
+                const searchInput = document.createElement('input');
+                const resultsBox = document.createElement('div');
+                const selectedOption = sursaSelect.options[sursaSelect.selectedIndex];
+                const selectionIsRequired = sursaSelect.required;
+                let debounceTimer = null;
+                let activeRequest = null;
+
+                wrapper.className = 'position-relative';
+
+                searchInput.type = 'search';
+                searchInput.className = 'form-control';
+                searchInput.placeholder = 'Căutare sursă...';
+                searchInput.autocomplete = 'off';
+                searchInput.required = selectionIsRequired;
+                searchInput.setAttribute('aria-label', 'Căutare sursă');
+                searchInput.setAttribute('aria-autocomplete', 'list');
+
+                resultsBox.className = [
+                    'position-absolute',
+                    'top-100',
+                    'start-0',
+                    'w-100',
+                    'bg-white',
+                    'border',
+                    'rounded-bottom',
+                    'shadow',
+                    'overflow-auto',
+                    'd-none'
+                ].join(' ');
+                resultsBox.style.zIndex = '1080';
+                resultsBox.style.maxHeight = '320px';
+                resultsBox.setAttribute('role', 'listbox');
+
+                if (selectedOption && selectedOption.value) {
+                    searchInput.value = selectedOption.text.trim();
+                }
+
+                if (sursaSelect.classList.contains('is-invalid')) {
+                    searchInput.classList.add('is-invalid');
+                }
+
+                // Select сохраняет строковое значение sursa для Django ModelForm.
+                sursaSelect.required = false;
+                sursaSelect.classList.add('d-none');
+                sursaSelect.parentNode.insertBefore(wrapper, sursaSelect);
+                wrapper.appendChild(searchInput);
+                wrapper.appendChild(sursaSelect);
+                wrapper.appendChild(resultsBox);
+
+                function showSursaMessage(message, className) {
+                    resultsBox.innerHTML = '';
+
+                    const messageElement = document.createElement('div');
+                    messageElement.className = className || 'px-3 py-2 text-muted';
+                    messageElement.textContent = message;
+                    resultsBox.appendChild(messageElement);
+                    resultsBox.classList.remove('d-none');
+                }
+
+                function chooseSursa(item) {
+                    sursaSelect.innerHTML = '';
+                    sursaSelect.appendChild(new Option(item.text, item.id, true, true));
+                    sursaSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+                    searchInput.value = item.text;
+                    searchInput.classList.remove('is-invalid');
+                    resultsBox.classList.add('d-none');
+                }
+
+                function renderSursaResults(items) {
+                    resultsBox.innerHTML = '';
+
+                    if (!items.length) {
+                        showSursaMessage('Nu au fost găsite surse.');
+                        return;
+                    }
+
+                    items.forEach(function (item) {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = [
+                            'list-group-item',
+                            'list-group-item-action',
+                            'border-0',
+                            'text-start'
+                        ].join(' ');
+                        button.textContent = item.text;
+                        button.setAttribute('role', 'option');
+                        button.addEventListener('click', function () {
+                            chooseSursa(item);
+                        });
+                        resultsBox.appendChild(button);
+                    });
+
+                    resultsBox.classList.remove('d-none');
+                }
+
+                async function loadSursaResults(query) {
+                    if (activeRequest) {
+                        activeRequest.abort();
+                    }
+
+                    activeRequest = new AbortController();
+                    showSursaMessage('Se caută...');
+
+                    try {
+                        const url = new URL(searchUrl, window.location.origin);
+                        url.searchParams.set('q', query.trim());
+
+                        const response = await fetch(url, {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                            signal: activeRequest.signal
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('HTTP ' + response.status);
+                        }
+
+                        const data = await response.json();
+                        renderSursaResults(
+                            Array.isArray(data.results) ? data.results : []
+                        );
+                    } catch (error) {
+                        if (error.name !== 'AbortError') {
+                            showSursaMessage(
+                                'Nu s-a putut încărca lista surselor.',
+                                'px-3 py-2 text-danger'
+                            );
+                        }
+                    }
+                }
+
+                searchInput.addEventListener('focus', function () {
+                    loadSursaResults(sursaSelect.value ? '' : searchInput.value);
+                });
+
+                searchInput.addEventListener('input', function () {
+                    window.clearTimeout(debounceTimer);
+                    sursaSelect.innerHTML = '<option value=""></option>';
+
+                    debounceTimer = window.setTimeout(function () {
+                        loadSursaResults(searchInput.value);
+                    }, 300);
+                });
+
+                calculForm.addEventListener('submit', function (event) {
+                    if (!sursaSelect.value) {
+                        event.preventDefault();
+                        searchInput.classList.add('is-invalid');
+                        showSursaMessage(
+                            'Selectați o sursă din lista de rezultate.',
                             'px-3 py-2 text-danger'
                         );
                         searchInput.focus();
